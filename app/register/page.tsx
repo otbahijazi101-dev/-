@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { isSupabaseConfigured } from '@/lib/supabase/config';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export const metadata: Metadata = { title: 'إنشاء حساب' };
 
@@ -8,6 +11,13 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  if (isSupabaseConfigured) {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) redirect('/upload');
+  }
+
   const { error } = await searchParams;
 
   return (
