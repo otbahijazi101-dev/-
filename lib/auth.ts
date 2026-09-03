@@ -24,5 +24,5 @@ export function validateUsername(value: string) {
 export function usernameToInternalEmail(username: string) {
   const normalized = normalizeUsername(username);
   const digest = createHash('sha256').update(normalized).digest('hex');
-  return `${digest}@users.soundpalestine.local`;
+  return `${digest}@users.radio.local`;
 }
