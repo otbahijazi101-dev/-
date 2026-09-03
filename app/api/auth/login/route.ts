@@ -11,26 +11,33 @@ function withError(request: Request, message: string) {
 
 export async function POST(request: Request) {
   if (!isSupabaseConfigured) {
-    return withError(request, 'لم يتم ربط قاعدة بيانات SoundPalestine بعد.');
+    return withError(request, 'لم يتم ربط قاعدة بيانات الراديو بعد.');
   }
 
   const formData = await request.formData();
-  const rawUsername = String(formData.get('username') ?? '');
+  const rawIdentifier = String(formData.get('username') ?? '').trim();
   const password = String(formData.get('password') ?? '');
-  const usernameResult = validateUsername(rawUsername);
 
-  if (!usernameResult.ok || !password) {
-    return withError(request, 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+  if (!rawIdentifier || !password) {
+    return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
+  }
+
+  let email: string;
+  if (rawIdentifier.includes('@')) {
+    email = rawIdentifier.toLocaleLowerCase('en-US');
+  } else {
+    const usernameResult = validateUsername(rawIdentifier);
+    if (!usernameResult.ok) {
+      return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
+    }
+    email = usernameToInternalEmail(usernameResult.username);
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: usernameToInternalEmail(usernameResult.username),
-    password,
-  });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    return withError(request, 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+    return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
   }
 
   const { data: profile } = await supabase
