@@ -1,16 +1,23 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SiteHeader } from '@/components/site-header';
+import { getSiteName } from '@/lib/site-settings';
 
-export const metadata: Metadata = {
-  title: {
-    default: 'SoundPalestine',
-    template: '%s | SoundPalestine',
-  },
-  description: 'مساحة مفتوحة للاستماع إلى المحتوى الصوتي ومشاركته بعد المراجعة.',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const siteName = await getSiteName();
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return {
+    title: {
+      default: siteName,
+      template: `%s | ${siteName}`,
+    },
+    description: 'مساحة مفتوحة للاستماع إلى المحتوى الصوتي ومشاركته بعد المراجعة.',
+  };
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const siteName = await getSiteName();
+
   return (
     <html lang="ar" dir="rtl">
       <body>
@@ -18,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main>{children}</main>
         <footer className="site-footer">
           <div className="container footer-inner">
-            <span>SoundPalestine</span>
+            <span>{siteName}</span>
             <span>مساحة للصوت، مفتوحة للجميع.</span>
           </div>
         </footer>
