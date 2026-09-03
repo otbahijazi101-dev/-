@@ -18,10 +18,14 @@ export default async function HomePage() {
   const siteName = await getSiteName();
   const siteMonogram = siteName.trim().slice(0, 2) || 'ر';
   let tracks: Array<PublicTrackRow & { audioUrl: string | null }> = [];
+  let uploadHref = '/register';
 
   if (isSupabaseConfigured) {
     try {
       const supabase = await createServerSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      uploadHref = user ? '/upload' : '/register';
+
       const { data } = await supabase
         .from('tracks')
         .select('id, title, description, category, storage_path, published_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
@@ -56,7 +60,7 @@ export default async function HomePage() {
             </p>
             <div className="hero-actions">
               <a className="button button-light" href="#latest">ابدأ الاستماع</a>
-              <Link className="button button-outline-light" href="/register">ارفع أول ملف</Link>
+              <Link className="button button-outline-light" href={uploadHref}>ارفع أول ملف</Link>
             </div>
           </div>
           <div className="hero-art" aria-hidden="true">
