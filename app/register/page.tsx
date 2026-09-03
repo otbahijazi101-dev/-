@@ -13,7 +13,7 @@ export default async function RegisterPage({
   return (
     <section className="auth-section">
       <div className="auth-card auth-card-wide">
-        <span className="eyebrow eyebrow-dark">انضم إلى SOUNDPALESTINE</span>
+        <span className="eyebrow eyebrow-dark">انضم إلى راديو</span>
         <h1>أنشئ حسابك</h1>
         <p className="form-intro">لن نطلب بريدًا إلكترونيًا. ستدخل دائمًا باسم المستخدم الذي تختاره.</p>
         {error ? <div className="form-alert">{error}</div> : null}
@@ -24,7 +24,7 @@ export default async function RegisterPage({
           </label>
           <label>
             <span>اسم المستخدم</span>
-            <input name="username" autoComplete="username" required minLength={3} maxLength={30} placeholder="مثال: palestine_voice" />
+            <input name="username" autoComplete="username" required minLength={3} maxLength={30} placeholder="مثال: صوت_القدس" />
             <small>يمكن استخدام الحروف العربية أو الإنجليزية والأرقام و . _ -</small>
           </label>
           <label>
