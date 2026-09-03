@@ -1,0 +1,41 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+
+export const metadata: Metadata = { title: 'إنشاء حساب' };
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+
+  return (
+    <section className="auth-section">
+      <div className="auth-card auth-card-wide">
+        <span className="eyebrow eyebrow-dark">انضم إلى SOUNDPALESTINE</span>
+        <h1>أنشئ حسابك</h1>
+        <p className="form-intro">لن نطلب بريدًا إلكترونيًا. ستدخل دائمًا باسم المستخدم الذي تختاره.</p>
+        {error ? <div className="form-alert">{error}</div> : null}
+        <form className="stack-form" action="/api/auth/register" method="post">
+          <label>
+            <span>اسم العرض</span>
+            <input name="displayName" maxLength={60} placeholder="الاسم الذي سيظهر للناس" />
+          </label>
+          <label>
+            <span>اسم المستخدم</span>
+            <input name="username" autoComplete="username" required minLength={3} maxLength={30} placeholder="مثال: palestine_voice" />
+            <small>يمكن استخدام الحروف العربية أو الإنجليزية والأرقام و . _ -</small>
+          </label>
+          <label>
+            <span>كلمة المرور</span>
+            <input name="password" type="password" autoComplete="new-password" required minLength={8} />
+            <small>ثمانية أحرف على الأقل.</small>
+          </label>
+          <button className="button button-dark button-wide" type="submit">إنشاء الحساب</button>
+        </form>
+        <p className="auth-switch">لديك حساب بالفعل؟ <Link href="/login">سجّل الدخول</Link></p>
+      </div>
+    </section>
+  );
+}
