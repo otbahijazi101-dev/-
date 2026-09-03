@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { validateUsername, usernameToInternalEmail } from '@/lib/auth';
-import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
-import { createAdminSupabaseClient } from '@/lib/supabase/admin';
+import { createAdminSupabaseClient, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 function withError(request: Request, message: string) {
@@ -67,8 +66,7 @@ export async function POST(request: Request) {
   });
 
   if (signInError) {
-    const url = new URL('/login', request.url);
-    return NextResponse.redirect(url, { status: 303 });
+    return NextResponse.redirect(new URL('/login', request.url), { status: 303 });
   }
 
   return NextResponse.redirect(new URL('/', request.url), { status: 303 });
