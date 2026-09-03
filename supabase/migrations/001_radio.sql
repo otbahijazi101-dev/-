@@ -1,5 +1,5 @@
--- SoundPalestine initial schema
--- Apply this migration only to the dedicated SoundPalestine Supabase project.
+-- Radio initial schema
+-- Apply this migration only to the dedicated Radio Supabase project.
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,

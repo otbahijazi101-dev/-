@@ -13,14 +13,14 @@ export default async function LoginPage({
   return (
     <section className="auth-section">
       <div className="auth-card">
-        <span className="eyebrow eyebrow-dark">SOUNDPALESTINE</span>
+        <span className="eyebrow eyebrow-dark">راديو</span>
         <h1>أهلًا بعودتك</h1>
-        <p className="form-intro">ادخل باسم المستخدم وكلمة المرور.</p>
+        <p className="form-intro">ادخل باسم المستخدم وكلمة المرور. ويمكن لحساب الأدمن الحالي الدخول بالبريد الإلكتروني أيضًا.</p>
         {error ? <div className="form-alert">{error}</div> : null}
         <form className="stack-form" action="/api/auth/login" method="post">
           <label>
-            <span>اسم المستخدم</span>
-            <input name="username" autoComplete="username" required minLength={3} maxLength={30} />
+            <span>اسم المستخدم أو البريد الإلكتروني</span>
+            <input name="username" autoComplete="username" required maxLength={120} />
           </label>
           <label>
             <span>كلمة المرور</span>

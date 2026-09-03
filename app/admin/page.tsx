@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getSiteName } from '@/lib/site-settings';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -17,15 +18,27 @@ type AdminTrack = {
   owner: { username: string; display_name: string | null } | null;
 };
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ settings?: string }>;
+}) {
   if (!isSupabaseConfigured) redirect('/login');
 
+  const { settings } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') redirect('/');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, status')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.role !== 'admin' || profile?.status !== 'active') redirect('/');
+
+  const siteName = await getSiteName();
 
   const { data } = await supabase
     .from('tracks')
@@ -43,9 +56,40 @@ export default async function AdminPage() {
     <section className="dashboard">
       <div className="container">
         <div className="dashboard-heading">
-          <div><h1>مراجعة الملفات</h1><p>{tracks.length} ملفًا بانتظار قرار الإدارة.</p></div>
+          <div><h1>لوحة الإدارة</h1><p>إدارة اسم المنصة ومراجعة الملفات الصوتية.</p></div>
           <Link className="button button-dark" href="/upload">رفع كأدمن</Link>
         </div>
+
+        <div className="panel settings-panel">
+          <div className="admin-card">
+            <div className="admin-card-top">
+              <div>
+                <h3>اسم المنصة</h3>
+                <p className="creator-name">غيّر الاسم هنا وسيظهر تلقائيًا في واجهة الراديو وعنوان المتصفح.</p>
+              </div>
+            </div>
+
+            {settings === 'saved' ? <div className="form-alert form-success">تم حفظ اسم المنصة.</div> : null}
+            {settings === 'invalid' ? <div className="form-alert">اكتب اسمًا صالحًا للمنصة.</div> : null}
+            {settings === 'error' ? <div className="form-alert">تعذر حفظ الاسم. حاول مرة أخرى.</div> : null}
+
+            <form className="stack-form settings-form" action="/api/admin/settings" method="post">
+              <label>
+                اسم الراديو
+                <input name="site_name" defaultValue={siteName} maxLength={80} required />
+                <small>الاسم الحالي: {siteName}</small>
+              </label>
+              <div>
+                <button className="button button-dark button-small" type="submit">حفظ الاسم</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div className="dashboard-heading dashboard-heading-compact">
+          <div><h2>مراجعة الملفات</h2><p>{tracks.length} ملفًا بانتظار قرار الإدارة.</p></div>
+        </div>
+
         <div className="panel">
           {tracks.length === 0 ? (
             <div className="empty-state"><strong>لا توجد ملفات تنتظر المراجعة.</strong><p>كل شيء محدث حاليًا.</p></div>

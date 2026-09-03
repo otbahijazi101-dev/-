@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AudioCard } from '@/components/audio-card';
+import { getSiteName } from '@/lib/site-settings';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -14,6 +15,8 @@ type PublicTrackRow = {
 };
 
 export default async function HomePage() {
+  const siteName = await getSiteName();
+  const siteMonogram = siteName.trim().slice(0, 2) || 'ر';
   let tracks: Array<PublicTrackRow & { audioUrl: string | null }> = [];
 
   if (isSupabaseConfigured) {
@@ -46,7 +49,7 @@ export default async function HomePage() {
       <section className="hero">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow">SOUNDPALESTINE</span>
+            <span className="eyebrow">{siteName}</span>
             <h1>كل صوت يستحق أن يُسمع.</h1>
             <p>
               استمع بحرية إلى الملفات المنشورة، أو أنشئ حسابًا باسم مستخدم وكلمة مرور وارفع صوتك ليصل إلى الناس بعد مراجعة الإدارة.
@@ -58,7 +61,7 @@ export default async function HomePage() {
           </div>
           <div className="hero-art" aria-hidden="true">
             <div className="hero-disc">
-              <div className="hero-disc-center">SP</div>
+              <div className="hero-disc-center">{siteMonogram}</div>
             </div>
             <div className="hero-wave">
               {Array.from({ length: 24 }).map((_, index) => (
@@ -82,7 +85,7 @@ export default async function HomePage() {
           {!isSupabaseConfigured ? (
             <div className="empty-state">
               <strong>الواجهة جاهزة.</strong>
-              <p>سيظهر المحتوى هنا فور ربط مشروع Supabase الخاص بـ SoundPalestine.</p>
+              <p>سيظهر المحتوى هنا فور ربط مشروع Supabase الخاص بـ {siteName}.</p>
             </div>
           ) : tracks.length === 0 ? (
             <div className="empty-state">

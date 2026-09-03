@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getSiteName } from '@/lib/site-settings';
 
 export async function SiteHeader() {
+  const siteName = await getSiteName();
   let username: string | null = null;
   let isAdmin = false;
 
@@ -29,9 +31,9 @@ export async function SiteHeader() {
   return (
     <header className="site-header">
       <div className="container header-inner">
-        <Link href="/" className="brand" aria-label="SoundPalestine - الرئيسية">
+        <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}>
           <span className="brand-logo-placeholder" aria-hidden="true">LOGO</span>
-          <span className="brand-name">SoundPalestine</span>
+          <span className="brand-name">{siteName}</span>
         </Link>
 
         <nav className="main-nav" aria-label="التنقل الرئيسي">

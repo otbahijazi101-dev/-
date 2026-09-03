@@ -11,7 +11,7 @@ function withError(request: Request, message: string) {
 
 export async function POST(request: Request) {
   if (!isSupabaseAdminConfigured) {
-    return withError(request, 'لم يتم ربط قاعدة بيانات SoundPalestine بعد.');
+    return withError(request, 'لم يتم ربط إعدادات إدارة قاعدة بيانات الراديو بعد.');
   }
 
   const formData = await request.formData();
