@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { VideoPreview } from '@/components/video-preview';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -61,9 +62,9 @@ export default async function MyTracksPage({
                       {track.status === 'rejected' && track.rejection_reason ? <p>سبب الرفض: {track.rejection_reason}</p> : null}
                       {track.mediaUrl ? (
                         isVideo ? (
-                          <video controls preload="metadata" src={track.mediaUrl} style={{ width: '100%', maxWidth: 640, maxHeight: 360, borderRadius: 12, background: '#000', marginTop: 12 }}>
-                            متصفحك لا يدعم تشغيل الفيديو.
-                          </video>
+                          <div style={{ width: '100%', maxWidth: 760, marginTop: 12 }}>
+                            <VideoPreview src={track.mediaUrl} title={track.title} />
+                          </div>
                         ) : (
                           <audio className="audio-player" controls preload="none" src={track.mediaUrl} />
                         )
