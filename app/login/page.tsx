@@ -6,9 +6,9 @@ export const metadata: Metadata = { title: 'تسجيل الدخول' };
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
 
   return (
     <section className="auth-section">
@@ -16,6 +16,7 @@ export default async function LoginPage({
         <span className="eyebrow eyebrow-dark">راديو</span>
         <h1>أهلًا بعودتك</h1>
         <p className="form-intro">ادخل باسم المستخدم وكلمة المرور. ويمكن لحساب الأدمن الحالي الدخول بالبريد الإلكتروني أيضًا.</p>
+        {reset === '1' ? <div className="form-alert">تم تغيير كلمة المرور بنجاح. يمكنك الدخول الآن.</div> : null}
         {error ? <div className="form-alert">{error}</div> : null}
         <form className="stack-form" action="/api/auth/login" method="post">
           <label>
