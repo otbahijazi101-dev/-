@@ -81,7 +81,13 @@ export function AudioCard({
             {dateLabel ? <span>{dateLabel}</span> : null}
           </div>
           <h2>{title}</h2>
-          <p className="creator-name">{creator}{username ? <span className="creator-handle"> @{username}</span> : null}</p>
+          <p className="creator-name">
+            {username ? (
+              <Link className="creator-link" href={`/publisher/${encodeURIComponent(username)}`}>
+                {creator}<span className="creator-handle"> @{username}</span>
+              </Link>
+            ) : creator}
+          </p>
           {description ? <p className="audio-description">{description}</p> : null}
           {tags?.length ? <div className="track-tags">{tags.map((tag) => <Link href={`/search?q=${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div> : null}
 
