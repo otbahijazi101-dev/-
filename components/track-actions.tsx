@@ -25,7 +25,9 @@ export function TrackActions({
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('radio-register', { detail: item }));
-    return () => window.dispatchEvent(new CustomEvent('radio-unregister', { detail: { id: item.id } }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('radio-unregister', { detail: { id: item.id } }));
+    };
   }, [item]);
 
   useEffect(() => {
