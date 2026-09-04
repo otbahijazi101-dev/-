@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050606" />
+  <title>راديو — تنزيلاتي</title>
+  <style>
+    *{box-sizing:border-box}html{color-scheme:dark;background:#050606}body{margin:0;background:#050606;color:#f4f6f4;font-family:Arial,Tahoma,sans-serif}main{width:min(760px,calc(100% - 28px));margin:0 auto;padding:40px 0 100px}.brand{font-weight:900;font-size:20px;margin-bottom:42px}.kicker{color:#48c98c;font-size:11px;font-weight:900}.head h1{font-size:44px;margin:6px 0 8px}.head p{margin:0 0 24px;color:#98a19a;line-height:1.8}.notice{padding:12px 14px;border:1px solid #222724;border-radius:12px;background:#0d0f0e;color:#aab2ac;font-size:12px;margin-bottom:18px}.list{display:grid;gap:8px}.row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border:1px solid #202522;border-radius:12px;background:#0d0f0e}.art{width:56px;height:56px;border-radius:10px;background:linear-gradient(145deg,#0c3a29,#111512);display:grid;place-items:center}.art:after{content:'';width:11px;height:11px;border-radius:50%;background:#edf3ef;box-shadow:0 0 0 7px rgba(24,166,107,.16),0 0 0 15px rgba(24,166,107,.07)}.copy{min-width:0}.copy strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}.copy span{display:block;color:#929b94;font-size:11px;margin-top:4px}.actions{display:flex;gap:5px}.btn{border:1px solid #2a302c;background:#111411;color:#eef1ef;min-height:34px;padding:0 11px;border-radius:8px;font:inherit;font-size:11px;font-weight:800}.btn.primary{background:#eef2ef;color:#111411}.empty{padding:34px 18px;text-align:center;border:1px solid #202522;border-radius:14px;background:#0d0f0e;color:#929b94}.empty strong{display:block;color:#fff;margin-bottom:7px}.player{position:fixed;inset-inline:0;bottom:0;background:rgba(8,10,9,.98);border-top:1px solid #242925;padding:10px 14px}.player-inner{width:min(760px,100%);margin:auto;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}.now{font-size:11px;color:#a4aca6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player audio{width:100%;height:38px}.top-actions{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px}.hidden{display:none!important}@media(max-width:560px){main{padding-top:28px}.brand{margin-bottom:28px}.head h1{font-size:36px}.row{grid-template-columns:48px minmax(0,1fr)}.art{width:48px;height:48px}.actions{grid-column:1/-1;justify-content:flex-end}}
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">راديو</div>
+    <div class="head">
+      <span class="kicker">بدون إنترنت</span>
+      <h1>تنزيلاتي</h1>
+      <p>هذه الصفحة محفوظة على جهازك. شغّل الملفات الصوتية التي حفظتها سابقًا حتى بدون اتصال.</p>
+    </div>
+    <div class="notice">لا تُحفظ هنا بيانات حسابك أو كلمة مرورك. التنزيلات تبقى على هذا الجهاز فقط وقد يمسحها النظام إذا احتاج مساحة.</div>
+    <div class="top-actions">
+      <button class="btn" id="retry">محاولة الاتصال</button>
+      <button class="btn" id="clear">حذف كل التنزيلات</button>
+    </div>
+    <div id="list" class="list"></div>
+  </main>
+  <div class="player hidden" id="playerBox">
+    <div class="player-inner">
+      <div class="now" id="now">—</div>
+      <audio id="player" controls preload="metadata"></audio>
+    </div>
+  </div>
+<script>
+(() => {
+  const KEY='radio-offline-tracks-v1';
+  const CACHE='radio-offline-media-v1';
+  const list=document.getElementById('list');
+  const player=document.getElementById('player');
+  const playerBox=document.getElementById('playerBox');
+  const now=document.getElementById('now');
+  function read(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(x)?x:[]}catch{return[]}}
+  function write(items){localStorage.setItem(KEY,JSON.stringify(items))}
+  function escapeHtml(value){return String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function render(){
+    const items=read();
+    if(!items.length){list.innerHTML='<div class="empty"><strong>لا توجد ملفات محفوظة.</strong>عندما تتصل بالإنترنت، اختر «حفظ دون إنترنت» من قائمة الملف الصوتي.</div>';return}
+    list.innerHTML=items.map(item=>`<article class="row"><div class="art"></div><div class="copy"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.creator)}</span></div><div class="actions"><button class="btn primary" data-play="${encodeURIComponent(item.id)}">تشغيل</button><button class="btn" data-delete="${encodeURIComponent(item.id)}">حذف</button></div></article>`).join('');
+  }
+  list.addEventListener('click',async(e)=>{
+    const play=e.target.closest('[data-play]');
+    const del=e.target.closest('[data-delete]');
+    if(play){
+      const id=decodeURIComponent(play.dataset.play);const item=read().find(x=>x.id===id);if(!item)return;
+      player.src='/offline-media/'+encodeURIComponent(id);now.textContent=item.title+' — '+item.creator;playerBox.classList.remove('hidden');
+      try{await player.play()}catch{}
+    }
+    if(del){
+      const id=decodeURIComponent(del.dataset.delete);const cache=await caches.open(CACHE);await cache.delete('/offline-media/'+encodeURIComponent(id));write(read().filter(x=>x.id!==id));render();
+    }
+  });
+  document.getElementById('retry').addEventListener('click',()=>location.href='/');
+  document.getElementById('clear').addEventListener('click',async()=>{if(!confirm('حذف كل الملفات المحفوظة من هذا الجهاز؟'))return;await caches.delete(CACHE);localStorage.removeItem(KEY);player.pause();playerBox.classList.add('hidden');render()});
+  render();
+})();
+</script>
+</body>
+</html>

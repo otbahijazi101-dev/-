@@ -1,32 +1,12 @@
-const SHELL_CACHE = 'radio-shell-v2';
-const STATIC_CACHE = 'radio-static-v2';
+const SHELL_CACHE = 'radio-shell-v3';
+const STATIC_CACHE = 'radio-static-v3';
 const OFFLINE_CACHE = 'radio-offline-media-v1';
-const OFFLINE_PAGE = '/offline';
+const OFFLINE_PAGE = '/offline.html';
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
-    const response = await fetch(OFFLINE_PAGE, { cache: 'reload' });
-    if (response.ok) {
-      const copy = response.clone();
-      await cache.put(OFFLINE_PAGE, response);
-      const html = await copy.text();
-      const urls = new Set(['/manifest.webmanifest', '/icon-192.png', '/icon-512.png']);
-      const regex = /(?:src|href)=["']([^"']+)["']/g;
-      let match;
-      while ((match = regex.exec(html))) {
-        const value = match[1];
-        if (value.startsWith('/_next/static/')) urls.add(value);
-      }
-      await Promise.all([...urls].map(async (url) => {
-        try {
-          const asset = await fetch(url, { cache: 'reload' });
-          if (asset.ok) await cache.put(url, asset);
-        } catch {
-          // One missing asset must not prevent the offline shell from installing.
-        }
-      }));
-    }
+    await cache.addAll([OFFLINE_PAGE, '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']);
     self.skipWaiting();
   })());
 });
@@ -41,8 +21,9 @@ self.addEventListener('activate', (event) => {
 });
 
 async function serveOfflineMedia(request) {
+  const url = new URL(request.url);
   const cache = await caches.open(OFFLINE_CACHE);
-  const cached = await cache.match(new Request(new URL(request.url).pathname));
+  const cached = await cache.match(url.origin + url.pathname);
   if (!cached) return new Response('Not found', { status: 404 });
 
   const range = request.headers.get('range');
