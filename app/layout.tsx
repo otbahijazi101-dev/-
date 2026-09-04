@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { SiteHeader } from '@/components/site-header';
+import { RadioPlayer } from '@/components/radio-player';
 import { getSiteName } from '@/lib/site-settings';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,6 +30,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span>مساحة للصوت والصورة، مفتوحة للجميع.</span>
           </div>
         </footer>
+        <RadioPlayer />
       </body>
     </html>
   );
