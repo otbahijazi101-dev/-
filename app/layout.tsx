@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import './features.css';
+import './polish.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { getSiteName } from '@/lib/site-settings';
@@ -28,7 +29,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className="site-footer">
           <div className="container footer-inner">
             <span>{siteName}</span>
-            <span>مساحة للصوت والصورة، مفتوحة للجميع.</span>
+            <span>مساحة هادئة للصوت والصورة.</span>
           </div>
         </footer>
         <RadioPlayer />

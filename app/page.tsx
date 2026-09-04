@@ -71,37 +71,53 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="hero">
+      <section className="hero hero-refined">
         <div className="container hero-grid">
           <div className="hero-copy">
             <span className="eyebrow">{siteName}</span>
             <h1>كل صوت يستحق أن يُسمع.</h1>
-            <p>استمع وشاهد المحتوى المنشور بحرية، أو أنشئ حسابًا وارفع صوتًا أو فيديو ليصل إلى الناس بعد مراجعة الإدارة.</p>
+            <p>مساحة بسيطة للاستماع والمشاهدة واكتشاف ما ينشره الناس، دون ازدحام أو تعقيد.</p>
             <div className="hero-actions">
-              <a className="button button-light" href="#latest">ابدأ الاستماع والمشاهدة</a>
-              <Link className="button button-outline-light" href={uploadHref}>ارفع أول ملف</Link>
+              <a className="button button-light" href="#latest">استكشف المحتوى</a>
+              <Link className="button button-outline-light" href={uploadHref}>ارفع محتوى</Link>
             </div>
             <form className="hero-search" action="/search">
-              <input name="q" placeholder="ابحث عن عنوان أو ناشر أو وسم..." aria-label="البحث" />
+              <input name="q" placeholder="ابحث عن عنوان أو ناشر أو وسم" aria-label="البحث" />
               <button type="submit">بحث</button>
             </form>
           </div>
+
           <div className="hero-art" aria-hidden="true">
             <div className="hero-disc"><div className="hero-disc-center">{siteMonogram}</div></div>
-            <div className="hero-wave">{Array.from({ length: 24 }).map((_, index) => <span key={index} style={{ height: `${15 + ((index * 29) % 78)}%` }} />)}</div>
+            <div className="hero-wave">{Array.from({ length: 20 }).map((_, index) => <span key={index} style={{ height: `${18 + ((index * 31) % 72)}%` }} />)}</div>
           </div>
         </div>
       </section>
 
-      <section className="section" id="latest">
+      <div className="home-trust-strip">
+        <div className="container home-trust-row">
+          <span>استماع ومشاهدة بلا تسجيل</span>
+          <span>رفع بسيط من حسابك</span>
+          <span>المحتوى يُراجع قبل النشر</span>
+        </div>
+      </div>
+
+      <section className="section latest-section" id="latest">
         <div className="container">
-          <div className="section-heading"><div><span className="section-kicker">المكتبة العامة</span><h2>أحدث المحتوى</h2></div><p>شغّل المحتوى، أضفه لقائمة الانتظار، احفظه أو شاركه من نفس البطاقة.</p></div>
+          <div className="section-heading latest-heading">
+            <div>
+              <span className="section-kicker">المكتبة العامة</span>
+              <h2>أحدث المحتوى</h2>
+            </div>
+            <p>شغّل، احفظ، شارك أو أضف إلى قائمتك من نفس المكان.</p>
+          </div>
+
           {!isSupabaseConfigured ? (
             <div className="empty-state"><strong>الواجهة جاهزة.</strong><p>سيظهر المحتوى هنا فور ربط مشروع Supabase الخاص بـ {siteName}.</p></div>
           ) : tracks.length === 0 ? (
             <div className="empty-state"><strong>لا توجد ملفات منشورة بعد.</strong><p>عند نشر أول ملف صوتي أو فيديو سيظهر هنا مباشرة.</p></div>
           ) : (
-            <div className="audio-grid">
+            <div className="audio-grid feed-grid">
               {tracks.map((track) => (
                 <AudioCard
                   key={track.id}
@@ -126,14 +142,6 @@ export default async function HomePage() {
               ))}
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="section section-muted">
-        <div className="container three-steps">
-          <div><span>01</span><h3>أنشئ حسابك</h3><p>اسم مستخدم وكلمة مرور فقط، ثم ادخل إلى مساحة الرفع.</p></div>
-          <div><span>02</span><h3>ارفع المحتوى</h3><p>أضف العنوان والوصف والتصنيف والوسوم والغلاف ثم ارفع الملف.</p></div>
-          <div><span>03</span><h3>بعد المراجعة يُنشر</h3><p>ملفات المستخدمين تنتظر اعتماد الإدارة، بينما يملك الأدمن صلاحية النشر المباشر.</p></div>
         </div>
       </section>
     </>

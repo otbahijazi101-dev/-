@@ -30,24 +30,24 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="main-nav" aria-label="التنقل الرئيسي">
-          <Link href="/">استمع</Link>
+          <Link href="/">المكتبة</Link>
           <Link href="/search">بحث</Link>
           {username ? <Link href="/following">أتابعهم</Link> : null}
           {username ? <Link href="/favorites">المحفوظات</Link> : null}
           {username ? <Link href="/playlists">قوائمي</Link> : null}
-          {username ? <Link href="/upload">ارفع</Link> : null}
+          {username ? <Link href="/upload">رفع</Link> : null}
           {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
           {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
         </nav>
 
         <form className="header-search" action="/search">
-          <input name="q" placeholder="ابحث..." aria-label="بحث" />
+          <input name="q" placeholder="ابحث في الراديو" aria-label="بحث" />
         </form>
 
         <div className="header-actions">
           {username ? (
             <>
-              <span className="username-chip">@{username}</span>
+              <Link className="account-chip" href="/account">@{username}</Link>
               <form action="/api/auth/logout" method="post"><button className="button button-ghost button-small" type="submit">خروج</button></form>
             </>
           ) : (
