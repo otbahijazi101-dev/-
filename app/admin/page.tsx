@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { VideoPreview } from '@/components/video-preview';
 import { getSiteName } from '@/lib/site-settings';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
@@ -111,9 +112,9 @@ export default async function AdminPage({
                 {track.description ? <p className="audio-description">{track.description}</p> : null}
                 {track.mediaUrl ? (
                   isVideo ? (
-                    <video controls preload="metadata" src={track.mediaUrl} style={{ width: '100%', maxHeight: 420, borderRadius: 12, background: '#000', margin: '16px 0' }}>
-                      متصفحك لا يدعم تشغيل الفيديو.
-                    </video>
+                    <div style={{ margin: '16px 0', maxWidth: 820 }}>
+                      <VideoPreview src={track.mediaUrl} title={track.title} />
+                    </div>
                   ) : (
                     <audio controls preload="none" src={track.mediaUrl} />
                   )
