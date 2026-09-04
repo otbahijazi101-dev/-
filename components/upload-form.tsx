@@ -15,7 +15,12 @@ const extensionByMime: Record<string, string> = {
   'audio/webm': 'webm',
   'audio/aac': 'aac',
   'audio/flac': 'flac',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov',
 };
+
+const supportedMimeTypes = new Set(Object.keys(extensionByMime));
 
 export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
@@ -30,7 +35,7 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
     const title = String(form.get('title') ?? '').trim();
     const description = String(form.get('description') ?? '').trim();
     const category = String(form.get('category') ?? '').trim();
-    const file = form.get('audio');
+    const file = form.get('media');
 
     if (title.length < 2 || title.length > 120) {
       setError('العنوان يجب أن يكون بين حرفين و120 حرفًا.');
@@ -41,11 +46,11 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
       return;
     }
     if (!(file instanceof File) || file.size === 0) {
-      setError('اختر ملفًا صوتيًا.');
+      setError('اختر ملفًا صوتيًا أو فيديو.');
       return;
     }
-    if (!file.type.startsWith('audio/')) {
-      setError('الملف المختار ليس ملفًا صوتيًا مدعومًا.');
+    if (!supportedMimeTypes.has(file.type)) {
+      setError('نوع الملف غير مدعوم. استخدم ملفًا صوتيًا أو MP4 أو WebM أو MOV.');
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -54,7 +59,7 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
     }
 
     setBusy(true);
-    const extension = extensionByMime[file.type] ?? 'audio';
+    const extension = extensionByMime[file.type] ?? 'media';
     const storagePath = `${userId}/${crypto.randomUUID()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
@@ -67,7 +72,7 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
 
     if (uploadError) {
       setBusy(false);
-      setError('تعذر رفع الملف الصوتي. حاول مرة أخرى.');
+      setError('تعذر رفع الملف. حاول مرة أخرى.');
       return;
     }
 
@@ -111,6 +116,7 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
           <option>ثقافة</option>
           <option>وثائقي</option>
           <option>إنشاد</option>
+          <option>فيديو</option>
           <option>أخرى</option>
         </select>
       </label>
@@ -119,9 +125,9 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
         <textarea name="description" maxLength={2000} placeholder="نبذة قصيرة عن هذا المحتوى" />
       </label>
       <label>
-        <span>الملف الصوتي</span>
-        <input name="audio" type="file" accept="audio/*" required />
-        <small>MP3 أو M4A أو WAV أو OGG وغيرها، حتى 50 ميجابايت.</small>
+        <span>الملف الصوتي أو الفيديو</span>
+        <input name="media" type="file" accept="audio/*,video/mp4,video/webm,video/quicktime" required />
+        <small>صوت: MP3 وM4A وWAV وOGG وغيرها. فيديو: MP4 أو WebM أو MOV. الحد الحالي 50 ميجابايت للملف.</small>
       </label>
       <button className="button button-dark button-wide" type="submit" disabled={busy}>
         {busy ? 'جاري الرفع...' : isAdmin ? 'ارفع وانشر مباشرة' : 'ارفع للمراجعة'}
