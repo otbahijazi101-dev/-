@@ -13,6 +13,7 @@ type AdminTrack = {
   description: string | null;
   category: string | null;
   storage_path: string;
+  mime_type: string | null;
   status: string;
   created_at: string;
   owner: { username: string; display_name: string | null } | null;
@@ -42,21 +43,21 @@ export default async function AdminPage({
 
   const { data } = await supabase
     .from('tracks')
-    .select('id, title, description, category, storage_path, status, created_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
+    .select('id, title, description, category, storage_path, mime_type, status, created_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
     .eq('status', 'pending')
     .order('created_at', { ascending: true });
 
   const rows = (data ?? []) as unknown as AdminTrack[];
   const tracks = await Promise.all(rows.map(async (track) => {
     const { data: signed } = await supabase.storage.from('audio').createSignedUrl(track.storage_path, 3600);
-    return { ...track, audioUrl: signed?.signedUrl ?? null };
+    return { ...track, mediaUrl: signed?.signedUrl ?? null };
   }));
 
   return (
     <section className="dashboard">
       <div className="container">
         <div className="dashboard-heading">
-          <div><h1>لوحة الإدارة</h1><p>إدارة اسم المنصة ومراجعة الملفات الصوتية.</p></div>
+          <div><h1>لوحة الإدارة</h1><p>إدارة اسم المنصة ومراجعة الملفات الصوتية والفيديو.</p></div>
           <Link className="button button-dark" href="/upload">رفع كأدمن</Link>
         </div>
 
@@ -93,25 +94,39 @@ export default async function AdminPage({
         <div className="panel">
           {tracks.length === 0 ? (
             <div className="empty-state"><strong>لا توجد ملفات تنتظر المراجعة.</strong><p>كل شيء محدث حاليًا.</p></div>
-          ) : tracks.map((track) => (
-            <article className="admin-card" key={track.id}>
-              <div className="admin-card-top">
-                <div>
-                  <h3>{track.title}</h3>
-                  <p className="creator-name">{track.owner?.display_name || track.owner?.username} @{track.owner?.username}</p>
+          ) : tracks.map((track) => {
+            const isVideo = Boolean(track.mime_type?.startsWith('video/'));
+            return (
+              <article className="admin-card" key={track.id}>
+                <div className="admin-card-top">
+                  <div>
+                    <h3>{track.title}</h3>
+                    <p className="creator-name">{track.owner?.display_name || track.owner?.username} @{track.owner?.username}</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <span className="tag">{isVideo ? 'فيديو' : 'صوت'}</span>
+                    {track.category ? <span className="tag">{track.category}</span> : null}
+                  </div>
                 </div>
-                {track.category ? <span className="tag">{track.category}</span> : null}
-              </div>
-              {track.description ? <p className="audio-description">{track.description}</p> : null}
-              {track.audioUrl ? <audio controls preload="none" src={track.audioUrl} /> : <div className="form-alert">تعذر إنشاء رابط استماع مؤقت.</div>}
-              <form className="admin-actions" action={`/api/admin/tracks/${track.id}`} method="post">
-                <input name="reason" placeholder="سبب الرفض عند الحاجة" maxLength={300} />
-                <button className="button button-dark button-small" name="action" value="publish" type="submit">اعتماد ونشر</button>
-                <button className="button button-ghost button-small" name="action" value="reject" type="submit">رفض</button>
-                <button className="button button-danger button-small" name="action" value="delete" type="submit">حذف</button>
-              </form>
-            </article>
-          ))}
+                {track.description ? <p className="audio-description">{track.description}</p> : null}
+                {track.mediaUrl ? (
+                  isVideo ? (
+                    <video controls preload="metadata" src={track.mediaUrl} style={{ width: '100%', maxHeight: 420, borderRadius: 12, background: '#000', margin: '16px 0' }}>
+                      متصفحك لا يدعم تشغيل الفيديو.
+                    </video>
+                  ) : (
+                    <audio controls preload="none" src={track.mediaUrl} />
+                  )
+                ) : <div className="form-alert">تعذر إنشاء رابط معاينة مؤقت.</div>}
+                <form className="admin-actions" action={`/api/admin/tracks/${track.id}`} method="post">
+                  <input name="reason" placeholder="سبب الرفض عند الحاجة" maxLength={300} />
+                  <button className="button button-dark button-small" name="action" value="publish" type="submit">اعتماد ونشر</button>
+                  <button className="button button-ghost button-small" name="action" value="reject" type="submit">رفض</button>
+                  <button className="button button-danger button-small" name="action" value="delete" type="submit">حذف</button>
+                </form>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
