@@ -46,7 +46,7 @@ export function AudioCard({
       <div className="audio-card-body" style={isVideo ? { padding: 0 } : undefined}>
         {isVideo && mediaUrl ? <VideoPreview src={mediaUrl} title={title} /> : null}
 
-        <div style={isVideo ? { padding: '22px 24px 24px' } : undefined}>
+        <div style={isVideo ? { padding: '20px 24px 24px' } : undefined}>
           <div className="audio-card-meta">
             {category ? <span className="tag">{category}</span> : null}
             <span>{isVideo ? 'فيديو' : 'صوت'}</span>
@@ -60,16 +60,21 @@ export function AudioCard({
           {description ? <p className="audio-description">{description}</p> : null}
 
           {!isVideo && mediaUrl ? (
-            <>
-              <audio className="audio-player" controls preload="none" src={mediaUrl}>
-                متصفحك لا يدعم تشغيل الصوت.
-              </audio>
-              <div style={{ marginTop: 12 }}>
-                <a className="button button-ghost button-small" href={downloadUrl || mediaUrl} download>
-                  تنزيل الصوت
-                </a>
-              </div>
-            </>
+            <audio className="audio-player" controls preload="none" src={mediaUrl}>
+              متصفحك لا يدعم تشغيل الصوت.
+            </audio>
+          ) : null}
+
+          {mediaUrl && downloadUrl ? (
+            <div style={{ marginTop: 14 }}>
+              <a
+                className="button button-ghost button-small"
+                href={downloadUrl}
+                download
+              >
+                {isVideo ? 'تحميل الفيديو' : 'تحميل الصوت'}
+              </a>
+            </div>
           ) : null}
 
           {!mediaUrl ? <div className="audio-unavailable">الملف غير متاح مؤقتًا.</div> : null}
