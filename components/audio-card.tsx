@@ -27,7 +27,6 @@ export function AudioCard({
   id,
   ownerId,
   userId,
-  slug,
   title,
   description,
   category,
@@ -46,7 +45,7 @@ export function AudioCard({
     ? new Intl.DateTimeFormat('ar', { dateStyle: 'medium' }).format(new Date(publishedAt))
     : null;
   const isVideo = Boolean(mimeType?.startsWith('video/'));
-  const href = `/track/${encodeURIComponent(slug || id)}`;
+  const href = `/#track-${id}`;
   const creator = displayName || username || 'راديو';
   const item = mediaUrl ? {
     id,
@@ -59,10 +58,10 @@ export function AudioCard({
   } : null;
 
   return (
-    <article className={`audio-card ${isVideo ? 'audio-card-video' : ''}`}>
+    <article id={`track-${id}`} className={`audio-card ${isVideo ? 'audio-card-video' : ''}`}>
       {!isVideo ? (
         coverUrl ? (
-          <Link href={href} className="audio-cover audio-cover-image" style={{ backgroundImage: `url(${coverUrl})` }} aria-label={`فتح ${title}`} />
+          <div className="audio-cover audio-cover-image" style={{ backgroundImage: `url(${coverUrl})` }} aria-label={title} />
         ) : (
           <div className="audio-cover" aria-hidden="true">
             <div className="waveform">
@@ -81,7 +80,7 @@ export function AudioCard({
             <span>{isVideo ? 'فيديو' : 'صوت'}</span>
             {dateLabel ? <span>{dateLabel}</span> : null}
           </div>
-          <h2><Link href={href}>{title}</Link></h2>
+          <h2>{title}</h2>
           <p className="creator-name">{creator}{username ? <span className="creator-handle"> @{username}</span> : null}</p>
           {description ? <p className="audio-description">{description}</p> : null}
           {tags?.length ? <div className="track-tags">{tags.map((tag) => <Link href={`/search?q=${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div> : null}
