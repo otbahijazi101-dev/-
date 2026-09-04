@@ -10,14 +10,26 @@ type PublicTrackRow = {
   description: string | null;
   category: string | null;
   storage_path: string;
+  mime_type: string | null;
   published_at: string | null;
   owner: { username: string; display_name: string | null } | null;
 };
 
+type PublicTrack = PublicTrackRow & {
+  mediaUrl: string | null;
+  downloadUrl: string | null;
+};
+
+function downloadFileName(track: PublicTrackRow) {
+  const extension = track.storage_path.split('.').pop() || 'audio';
+  const safeTitle = track.title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'audio';
+  return `${safeTitle}.${extension}`;
+}
+
 export default async function HomePage() {
   const siteName = await getSiteName();
   const siteMonogram = siteName.trim().slice(0, 2) || 'ر';
-  let tracks: Array<PublicTrackRow & { audioUrl: string | null }> = [];
+  let tracks: PublicTrack[] = [];
   let uploadHref = '/register';
 
   if (isSupabaseConfigured) {
@@ -28,7 +40,7 @@ export default async function HomePage() {
 
       const { data } = await supabase
         .from('tracks')
-        .select('id, title, description, category, storage_path, published_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
+        .select('id, title, description, category, storage_path, mime_type, published_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
         .eq('status', 'published')
         .order('published_at', { ascending: false })
         .limit(30);
@@ -40,7 +52,19 @@ export default async function HomePage() {
             .from('audio')
             .createSignedUrl(track.storage_path, 60 * 60);
 
-          return { ...track, audioUrl: signed?.signedUrl ?? null };
+          let downloadUrl: string | null = null;
+          if (!track.mime_type?.startsWith('video/')) {
+            const { data: downloadSigned } = await supabase.storage
+              .from('audio')
+              .createSignedUrl(track.storage_path, 60 * 60, { download: downloadFileName(track) });
+            downloadUrl = downloadSigned?.signedUrl ?? null;
+          }
+
+          return {
+            ...track,
+            mediaUrl: signed?.signedUrl ?? null,
+            downloadUrl,
+          };
         }),
       );
     } catch {
@@ -56,10 +80,10 @@ export default async function HomePage() {
             <span className="eyebrow">{siteName}</span>
             <h1>كل صوت يستحق أن يُسمع.</h1>
             <p>
-              استمع بحرية إلى الملفات المنشورة، أو أنشئ حسابًا باسم مستخدم وكلمة مرور وارفع صوتك ليصل إلى الناس بعد مراجعة الإدارة.
+              استمع وشاهد المحتوى المنشور بحرية، أو أنشئ حسابًا وارفع صوتًا أو فيديو ليصل إلى الناس بعد مراجعة الإدارة.
             </p>
             <div className="hero-actions">
-              <a className="button button-light" href="#latest">ابدأ الاستماع</a>
+              <a className="button button-light" href="#latest">ابدأ الاستماع والمشاهدة</a>
               <Link className="button button-outline-light" href={uploadHref}>ارفع أول ملف</Link>
             </div>
           </div>
@@ -81,9 +105,9 @@ export default async function HomePage() {
           <div className="section-heading">
             <div>
               <span className="section-kicker">المكتبة العامة</span>
-              <h2>أحدث الأصوات</h2>
+              <h2>أحدث المحتوى</h2>
             </div>
-            <p>كل ما وافقت عليه الإدارة يظهر هنا ويمكن لأي زائر تشغيله دون تسجيل.</p>
+            <p>كل ما وافقت عليه الإدارة يظهر هنا؛ ويمكن لأي زائر تشغيل الصوت أو مشاهدة الفيديو دون تسجيل.</p>
           </div>
 
           {!isSupabaseConfigured ? (
@@ -94,7 +118,7 @@ export default async function HomePage() {
           ) : tracks.length === 0 ? (
             <div className="empty-state">
               <strong>لا توجد ملفات منشورة بعد.</strong>
-              <p>عند نشر أول ملف صوتي سيظهر هنا مباشرة.</p>
+              <p>عند نشر أول ملف صوتي أو فيديو سيظهر هنا مباشرة.</p>
             </div>
           ) : (
             <div className="audio-grid">
@@ -106,7 +130,9 @@ export default async function HomePage() {
                   category={track.category}
                   username={track.owner?.username}
                   displayName={track.owner?.display_name}
-                  audioUrl={track.audioUrl}
+                  mediaUrl={track.mediaUrl}
+                  downloadUrl={track.downloadUrl}
+                  mimeType={track.mime_type}
                   publishedAt={track.published_at}
                 />
               ))}
@@ -117,8 +143,8 @@ export default async function HomePage() {
 
       <section className="section section-muted">
         <div className="container three-steps">
-          <div><span>01</span><h3>أنشئ حسابك</h3><p>اسم مستخدم وكلمة مرور فقط. لا نطلب منك بريدًا إلكترونيًا للدخول.</p></div>
-          <div><span>02</span><h3>ارفع الملف</h3><p>أضف العنوان والوصف والتصنيف ثم ارفع الملف الصوتي.</p></div>
+          <div><span>01</span><h3>أنشئ حسابك</h3><p>اسم مستخدم وكلمة مرور فقط، ثم ادخل إلى مساحة الرفع.</p></div>
+          <div><span>02</span><h3>ارفع المحتوى</h3><p>أضف العنوان والوصف والتصنيف ثم ارفع ملفًا صوتيًا أو فيديو.</p></div>
           <div><span>03</span><h3>بعد المراجعة يُنشر</h3><p>ملفات المستخدمين تنتظر اعتماد الإدارة، بينما يملك الأدمن صلاحية النشر المباشر.</p></div>
         </div>
       </section>
