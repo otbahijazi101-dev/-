@@ -7,14 +7,27 @@ export function VideoPreview({ src, title }: { src: string; title: string }) {
 
   if (playing) {
     return (
-      <div style={{ width: '100%', aspectRatio: '16 / 9', background: '#000', overflow: 'hidden' }}>
+      <div
+        style={{
+          width: '100%',
+          aspectRatio: '16 / 9',
+          background: '#000',
+          overflow: 'hidden',
+        }}
+      >
         <video
           controls
           autoPlay
           playsInline
           preload="metadata"
           src={src}
-          style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain', background: '#000' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            objectFit: 'contain',
+            background: '#000',
+          }}
         >
           متصفحك لا يدعم تشغيل الفيديو.
         </video>
@@ -29,14 +42,15 @@ export function VideoPreview({ src, title }: { src: string; title: string }) {
       aria-label={`تشغيل الفيديو: ${title}`}
       style={{
         width: '100%',
-        aspectRatio: '16 / 9',
+        height: 'clamp(110px, 9vw, 165px)',
         border: 0,
         padding: 0,
         position: 'relative',
         overflow: 'hidden',
-        background: 'linear-gradient(135deg, #0a5338 0%, #123d2d 58%, #291817 100%)',
+        background: 'linear-gradient(100deg, #0a5338 0%, #103f30 52%, #1c1d19 100%)',
         color: '#fff',
         cursor: 'pointer',
+        display: 'block',
       }}
     >
       <span
@@ -44,26 +58,10 @@ export function VideoPreview({ src, title }: { src: string; title: string }) {
         style={{
           position: 'absolute',
           inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-          opacity: 0.18,
+          background: 'linear-gradient(90deg, rgba(255,255,255,.02), transparent 42%, rgba(0,0,0,.18))',
         }}
-      >
-        {Array.from({ length: 34 }).map((_, index) => (
-          <span
-            key={index}
-            style={{
-              width: 4,
-              height: `${18 + ((index * 23) % 62)}%`,
-              maxHeight: 92,
-              borderRadius: 99,
-              background: '#fff',
-            }}
-          />
-        ))}
-      </span>
+      />
+
       <span
         aria-hidden="true"
         style={{
@@ -75,30 +73,30 @@ export function VideoPreview({ src, title }: { src: string; title: string }) {
       >
         <span
           style={{
-            width: 78,
-            height: 78,
+            width: 58,
+            height: 58,
             borderRadius: '50%',
             display: 'grid',
             placeItems: 'center',
             background: 'rgba(255,255,255,.94)',
             color: '#111410',
-            fontSize: 30,
-            paddingInlineStart: 5,
-            boxShadow: '0 14px 40px rgba(0,0,0,.24)',
+            fontSize: 23,
+            paddingInlineStart: 4,
+            boxShadow: '0 10px 30px rgba(0,0,0,.22)',
           }}
         >
           ▶
         </span>
       </span>
+
       <span
         style={{
           position: 'absolute',
-          insetInline: 22,
-          bottom: 18,
-          textAlign: 'right',
+          insetInlineEnd: 22,
+          bottom: 16,
           fontWeight: 800,
-          fontSize: 14,
-          textShadow: '0 2px 14px rgba(0,0,0,.45)',
+          fontSize: 13,
+          textShadow: '0 2px 12px rgba(0,0,0,.5)',
         }}
       >
         اضغط للمشاهدة
