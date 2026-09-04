@@ -4,13 +4,13 @@ import { UploadForm } from '@/components/upload-form';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
-export const metadata: Metadata = { title: 'رفع ملف صوتي' };
+export const metadata: Metadata = { title: 'رفع صوت أو فيديو' };
 
 export default async function UploadPage() {
   if (!isSupabaseConfigured) {
     return (
       <section className="auth-section">
-        <div className="auth-card"><h1>رفع ملف صوتي</h1><div className="setup-note">نحتاج أولًا ربط مشروع Supabase الخاص بـ SoundPalestine.</div></div>
+        <div className="auth-card"><h1>رفع صوت أو فيديو</h1><div className="setup-note">نحتاج أولًا ربط مشروع Supabase الخاص بالراديو.</div></div>
       </section>
     );
   }
@@ -32,11 +32,11 @@ export default async function UploadPage() {
     <section className="auth-section">
       <div className="auth-card auth-card-wide">
         <span className="eyebrow eyebrow-dark">UPLOAD</span>
-        <h1>ارفع ملفًا صوتيًا</h1>
+        <h1>ارفع صوتًا أو فيديو</h1>
         <p className="form-intro">
           {isAdmin
-            ? 'أنت أدمن: الملف الذي ترفعه سيظهر للعامة مباشرة.'
-            : 'سيصل الملف إلى الإدارة للمراجعة، ولن يظهر للعامة إلا بعد اعتماده.'}
+            ? 'أنت أدمن: المحتوى الذي ترفعه سيظهر للعامة مباشرة.'
+            : 'سيصل المحتوى إلى الإدارة للمراجعة، ولن يظهر للعامة إلا بعد اعتماده.'}
         </p>
         <UploadForm userId={user.id} isAdmin={isAdmin} />
       </div>
