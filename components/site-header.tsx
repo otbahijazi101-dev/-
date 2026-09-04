@@ -33,9 +33,10 @@ export async function SiteHeader() {
         <nav className="main-nav" aria-label="التنقل الرئيسي">
           <Link href="/">استمع</Link>
           <Link href="/search">بحث</Link>
-          {username ? <Link href="/upload">ارفع</Link> : null}
+          {username ? <Link href="/following">أتابعهم</Link> : null}
           {username ? <Link href="/favorites">المحفوظات</Link> : null}
           {username ? <Link href="/playlists">قوائمي</Link> : null}
+          {username ? <Link href="/upload">ارفع</Link> : null}
           {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
           {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
         </nav>
