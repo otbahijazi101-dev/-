@@ -11,7 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
       default: siteName,
       template: `%s | ${siteName}`,
     },
-    description: 'مساحة مفتوحة للاستماع إلى المحتوى الصوتي ومشاركته بعد المراجعة.',
+    description: 'مساحة مفتوحة للاستماع والمشاهدة ومشاركة المحتوى بعد المراجعة.',
   };
 }
 
@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <footer className="site-footer">
           <div className="container footer-inner">
             <span>{siteName}</span>
-            <span>مساحة للصوت، مفتوحة للجميع.</span>
+            <span>مساحة للصوت والصورة، مفتوحة للجميع.</span>
           </div>
         </footer>
       </body>
