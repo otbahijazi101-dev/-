@@ -160,18 +160,18 @@ export function RadioPlayer() {
             onEnded={next}
           />
         )}
-        <button className="player-main-button" type="button" onClick={togglePlay} aria-label={playing ? 'إيقاف مؤقت' : 'تشغيل'}>
-          {playing ? 'Ⅱ' : '▶'}
+        <button className="player-text-button player-primary-control" type="button" onClick={togglePlay}>
+          {playing ? 'إيقاف' : 'تشغيل'}
         </button>
         <button className="player-wave" type="button" onClick={seek} aria-label="الانتقال داخل الملف">
           {bars.map((height, index) => (
             <span key={index} className={index / bars.length <= progress ? 'played' : ''} style={{ height: `${height}%` }} />
           ))}
         </button>
-        <button className="button button-ghost button-small" type="button" onClick={next} disabled={!hasNext}>
-          التالي {queue.length ? `(${queue.length})` : ''}
+        <button className="player-text-button" type="button" onClick={next} disabled={!hasNext}>
+          التالي{queue.length ? ` (${queue.length})` : ''}
         </button>
-        <button className="player-close" type="button" onClick={() => { activeMedia()?.pause(); setCurrent(null); setQueue([]); }} aria-label="إغلاق المشغل">×</button>
+        <button className="player-text-button player-close" type="button" onClick={() => { activeMedia()?.pause(); setCurrent(null); setQueue([]); }}>إغلاق</button>
       </div>
     </aside>
   );

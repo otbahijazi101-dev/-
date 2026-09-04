@@ -61,7 +61,7 @@ export function TrackActions({
 
   function queue() {
     window.dispatchEvent(new CustomEvent('radio-queue', { detail: item }));
-    setNotice('أضيف إلى قائمة الانتظار.');
+    setNotice('أضيف إلى الانتظار.');
   }
 
   async function toggleLike() {
@@ -104,7 +104,7 @@ export function TrackActions({
       return;
     }
     await navigator.clipboard.writeText(url);
-    setNotice('تم نسخ رابط المقطع.');
+    setNotice('تم نسخ الرابط.');
   }
 
   async function addToPlaylist() {
@@ -114,18 +114,18 @@ export function TrackActions({
       return;
     }
     const { error } = await supabase.from('playlist_items').insert({ playlist_id: playlistId, track_id: item.id });
-    setNotice(error?.code === '23505' ? 'المقطع موجود بالفعل في هذه القائمة.' : error ? 'تعذر الإضافة.' : 'أضيف إلى قائمة التشغيل.');
+    setNotice(error?.code === '23505' ? 'المقطع موجود بالفعل في هذه القائمة.' : error ? 'تعذر الإضافة.' : 'أضيف إلى القائمة.');
   }
 
   return (
     <div className="track-actions-wrap">
       <div className="track-actions-row">
-        <button className="button button-dark button-small" type="button" onClick={play}>▶ تشغيل</button>
-        <button className="button button-ghost button-small" type="button" onClick={queue}>+ قائمة الانتظار</button>
-        <button className="button button-ghost button-small" type="button" onClick={toggleLike}>{liked ? '♥ أعجبني' : '♡ إعجاب'}</button>
-        <button className="button button-ghost button-small" type="button" onClick={toggleFavorite}>{favorite ? '★ محفوظ' : '☆ حفظ'}</button>
+        <button className="button button-dark button-small" type="button" onClick={play}>تشغيل</button>
+        <button className="button button-ghost button-small" type="button" onClick={queue}>انتظار</button>
+        <button className="button button-ghost button-small" type="button" onClick={toggleLike}>{liked ? 'تم الإعجاب' : 'إعجاب'}</button>
+        <button className="button button-ghost button-small" type="button" onClick={toggleFavorite}>{favorite ? 'محفوظ' : 'حفظ'}</button>
         {ownerId && ownerId !== userId ? (
-          <button className="button button-ghost button-small" type="button" onClick={toggleFollow}>{following ? 'متابَع ✓' : 'متابعة'}</button>
+          <button className="button button-ghost button-small" type="button" onClick={toggleFollow}>{following ? 'تتابعه' : 'متابعة'}</button>
         ) : null}
         <button className="button button-ghost button-small" type="button" onClick={share}>مشاركة</button>
       </div>

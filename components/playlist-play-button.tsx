@@ -12,7 +12,7 @@ export function PlaylistPlayButton({ items }: { items: RadioItem[] }) {
 
   return (
     <button className="button button-dark button-small" type="button" onClick={playAll} disabled={!items.length}>
-      ▶ تشغيل القائمة
+      تشغيل القائمة
     </button>
   );
 }

@@ -26,7 +26,6 @@ export async function SiteHeader() {
     <header className="site-header">
       <div className="container header-inner">
         <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}>
-          <span className="brand-logo-placeholder" aria-hidden="true">LOGO</span>
           <span className="brand-name">{siteName}</span>
         </Link>
 
