@@ -23,6 +23,10 @@ export type AudioCardProps = {
   waveform?: number[] | null;
 };
 
+function normalizeName(value?: string | null) {
+  return value?.trim().toLocaleLowerCase('en-US') ?? '';
+}
+
 export function AudioCard({
   id,
   ownerId,
@@ -46,7 +50,15 @@ export function AudioCard({
     : null;
   const isVideo = Boolean(mimeType?.startsWith('video/'));
   const href = `/#track-${id}`;
-  const creator = displayName || username || 'راديو';
+  const hasDistinctDisplayName = Boolean(
+    displayName && username && normalizeName(displayName) !== normalizeName(username),
+  );
+  const creator = hasDistinctDisplayName ? displayName! : username || displayName || 'راديو';
+  const creatorLabel = username
+    ? hasDistinctDisplayName
+      ? `${displayName} — @${username}`
+      : `@${username}`
+    : creator;
   const item = mediaUrl ? {
     id,
     title,
@@ -84,9 +96,9 @@ export function AudioCard({
           <p className="creator-name">
             {username ? (
               <Link className="creator-link" href={`/publisher/${encodeURIComponent(username)}`}>
-                {creator}<span className="creator-handle"> @{username}</span>
+                {creatorLabel}
               </Link>
-            ) : creator}
+            ) : creatorLabel}
           </p>
           {description ? <p className="audio-description">{description}</p> : null}
           {tags?.length ? <div className="track-tags">{tags.map((tag) => <Link href={`/search?q=${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div> : null}
