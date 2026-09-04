@@ -12,14 +12,8 @@ export async function SiteHeader() {
     try {
       const supabase = await createServerSupabaseClient();
       const { data: { user } } = await supabase.auth.getUser();
-
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username, role')
-          .eq('id', user.id)
-          .maybeSingle();
-
+        const { data: profile } = await supabase.from('profiles').select('username, role').eq('id', user.id).maybeSingle();
         username = profile?.username ?? null;
         isAdmin = profile?.role === 'admin';
       }
@@ -38,24 +32,26 @@ export async function SiteHeader() {
 
         <nav className="main-nav" aria-label="التنقل الرئيسي">
           <Link href="/">استمع</Link>
-          {username ? <Link href="/upload">ارفع صوتًا</Link> : null}
+          <Link href="/search">بحث</Link>
+          {username ? <Link href="/upload">ارفع</Link> : null}
+          {username ? <Link href="/favorites">المحفوظات</Link> : null}
+          {username ? <Link href="/playlists">قوائمي</Link> : null}
           {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
           {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
         </nav>
+
+        <form className="header-search" action="/search">
+          <input name="q" placeholder="ابحث..." aria-label="بحث" />
+        </form>
 
         <div className="header-actions">
           {username ? (
             <>
               <span className="username-chip">@{username}</span>
-              <form action="/api/auth/logout" method="post">
-                <button className="button button-ghost button-small" type="submit">خروج</button>
-              </form>
+              <form action="/api/auth/logout" method="post"><button className="button button-ghost button-small" type="submit">خروج</button></form>
             </>
           ) : (
-            <>
-              <Link className="button button-ghost button-small" href="/login">دخول</Link>
-              <Link className="button button-dark button-small" href="/register">إنشاء حساب</Link>
-            </>
+            <><Link className="button button-ghost button-small" href="/login">دخول</Link><Link className="button button-dark button-small" href="/register">إنشاء حساب</Link></>
           )}
         </div>
       </div>
