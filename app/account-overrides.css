@@ -1,0 +1,22 @@
+/* Account actions layered after the main visual polish. */
+.account-admin-forms { display: grid; gap: 18px; }
+.account-form-separated { padding-top: 18px; border-top: 1px solid var(--line); }
+.account-danger-card {
+  margin-top: 16px;
+  background: linear-gradient(180deg,#fff,#fff8f8);
+  border: 1px solid #eed0d2;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 8px 28px rgba(91,22,28,.035);
+}
+.account-danger-card .account-card-heading > span { color: #a92b32; }
+.account-danger-card .account-card-heading h2 { color: #6f1f24; }
+.account-delete-form { max-width: 620px; gap: 14px; }
+.account-delete-form input { border-color: #e7c7c9; background: #fffafa; }
+.account-delete-form input:focus { border-color: #b8292f; box-shadow: 0 0 0 3px rgba(184,41,47,.08); }
+.account-danger-note { color: #8a4d50 !important; line-height: 1.7; }
+.account-delete-button { min-height: 38px; border-radius: 10px; }
+
+@media (max-width: 700px) {
+  .account-danger-card { padding: 19px; }
+}

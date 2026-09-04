@@ -26,10 +26,7 @@ export async function POST(request: Request) {
     if (newPassword !== confirmPassword) return accountRedirect(request, { error: 'password_match' });
     if (!user.email) return accountRedirect(request, { error: 'update_failed' });
 
-    const { error: verifyError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: currentPassword,
-    });
+    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
     if (verifyError) return accountRedirect(request, { error: 'current_password' });
 
     const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
@@ -38,25 +35,48 @@ export async function POST(request: Request) {
     return accountRedirect(request, { password: 'saved' });
   }
 
-  if (action === 'username') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, status, username')
-      .eq('id', user.id)
-      .maybeSingle();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, status, username, display_name')
+    .eq('id', user.id)
+    .maybeSingle();
 
-    if (profile?.role !== 'admin' || profile?.status !== 'active') {
-      return accountRedirect(request, { error: 'forbidden' });
+  if (profile?.role !== 'admin' || profile?.status !== 'active') {
+    return accountRedirect(request, { error: 'forbidden' });
+  }
+  if (!isSupabaseAdminConfigured) return accountRedirect(request, { error: 'update_failed' });
+
+  const admin = createAdminSupabaseClient();
+
+  if (action === 'display_name') {
+    const displayName = String(formData.get('display_name') ?? '').trim();
+    if (displayName.length > 60) return accountRedirect(request, { error: 'display_name_invalid' });
+
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({ display_name: displayName || null })
+      .eq('id', user.id);
+    if (profileError) return accountRedirect(request, { error: 'update_failed' });
+
+    const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {
+      user_metadata: { ...(user.user_metadata ?? {}), display_name: displayName || null },
+    });
+
+    if (metadataError) {
+      await admin.from('profiles').update({ display_name: profile.display_name }).eq('id', user.id);
+      return accountRedirect(request, { error: 'update_failed' });
     }
 
+    return accountRedirect(request, { displayName: 'saved' });
+  }
+
+  if (action === 'username') {
     const usernameResult = validateUsername(String(formData.get('username') ?? ''));
     if (!usernameResult.ok) return accountRedirect(request, { error: 'username_invalid' });
-    if (!isSupabaseAdminConfigured) return accountRedirect(request, { error: 'update_failed' });
 
     const username = usernameResult.username;
     if (username === profile.username) return accountRedirect(request, { username: 'saved' });
 
-    const admin = createAdminSupabaseClient();
     const { data: existing } = await admin
       .from('profiles')
       .select('id')
@@ -66,10 +86,7 @@ export async function POST(request: Request) {
 
     if (existing) return accountRedirect(request, { error: 'username_taken' });
 
-    const { error: profileError } = await admin
-      .from('profiles')
-      .update({ username })
-      .eq('id', user.id);
+    const { error: profileError } = await admin.from('profiles').update({ username }).eq('id', user.id);
     if (profileError) return accountRedirect(request, { error: 'update_failed' });
 
     const { error: metadataError } = await admin.auth.admin.updateUserById(user.id, {

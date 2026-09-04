@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: 'حسابي' };
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: Promise<{ password?: string; username?: string; error?: string }>;
+  searchParams: Promise<{ password?: string; username?: string; displayName?: string; error?: string }>;
 }) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,13 +15,13 @@ export default async function AccountPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, role, status')
+    .select('username, display_name, role, status')
     .eq('id', user.id)
     .maybeSingle();
 
   if (!profile) redirect('/');
 
-  const { password, username, error } = await searchParams;
+  const { password, username, displayName, error } = await searchParams;
   const isAdmin = profile.role === 'admin' && profile.status === 'active';
 
   const errorText: Record<string, string> = {
@@ -30,6 +30,9 @@ export default async function AccountPage({
     password_short: 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.',
     username_invalid: 'اسم الحساب غير صالح.',
     username_taken: 'اسم الحساب مستخدم بالفعل.',
+    display_name_invalid: 'اسم العرض غير صالح.',
+    delete_confirmation: 'اكتب عبارة «حذف حسابي» كما هي للتأكيد.',
+    last_admin: 'لا يمكن حذف آخر حساب أدمن فعّال. أنشئ أدمن آخر أولًا.',
     forbidden: 'هذا الإجراء غير متاح لهذا الحساب.',
     update_failed: 'تعذر حفظ التعديل. حاول مرة أخرى.',
   };
@@ -40,11 +43,12 @@ export default async function AccountPage({
         <div className="account-heading">
           <span className="section-kicker">الإعدادات</span>
           <h1>حسابي</h1>
-          <p>إدارة بيانات الدخول الخاصة بك بأمان.</p>
+          <p>إدارة بيانات الدخول والحساب من مكان واحد.</p>
         </div>
 
         {password === 'saved' ? <div className="form-alert form-success">تم تغيير كلمة المرور بنجاح.</div> : null}
         {username === 'saved' ? <div className="form-alert form-success">تم تغيير اسم الحساب بنجاح.</div> : null}
+        {displayName === 'saved' ? <div className="form-alert form-success">تم تغيير اسم العرض بنجاح.</div> : null}
         {error ? <div className="form-alert">{errorText[error] ?? 'تعذر حفظ التعديل.'}</div> : null}
 
         <div className="account-grid">
@@ -77,25 +81,57 @@ export default async function AccountPage({
           <article className="account-card account-summary-card">
             <div className="account-card-heading">
               <span>الحساب</span>
-              <h2>@{profile.username}</h2>
-              <p>{isAdmin ? 'حساب إدارة الراديو' : 'حساب مستخدم'}</p>
+              <h2>{profile.display_name || `@${profile.username}`}</h2>
+              <p className="creator-handle">@{profile.username}</p>
             </div>
 
             {isAdmin ? (
-              <form className="stack-form account-form" action="/api/account/settings" method="post">
-                <input type="hidden" name="action" value="username" />
-                <label>
-                  اسم الحساب
-                  <input name="username" defaultValue={profile.username} minLength={3} maxLength={30} required />
-                  <small>سيظهر بهذا الشكل في الراديو ويُستخدم أيضًا عند تسجيل الدخول.</small>
-                </label>
-                <div><button className="button button-ghost" type="submit">تغيير اسم الحساب</button></div>
-              </form>
+              <div className="account-admin-forms">
+                <form className="stack-form account-form" action="/api/account/settings" method="post">
+                  <input type="hidden" name="action" value="display_name" />
+                  <label>
+                    اسم العرض
+                    <input name="display_name" defaultValue={profile.display_name ?? ''} maxLength={60} placeholder="الاسم الذي يظهر للناس" />
+                    <small>يمكن للأدمن تغيير الاسم الظاهر بجوار منشوراته.</small>
+                  </label>
+                  <div><button className="button button-ghost" type="submit">حفظ اسم العرض</button></div>
+                </form>
+
+                <form className="stack-form account-form account-form-separated" action="/api/account/settings" method="post">
+                  <input type="hidden" name="action" value="username" />
+                  <label>
+                    اسم الحساب
+                    <input name="username" defaultValue={profile.username} minLength={3} maxLength={30} required />
+                    <small>يظهر كـ @{profile.username} ويُستخدم عند تسجيل الدخول.</small>
+                  </label>
+                  <div><button className="button button-ghost" type="submit">تغيير اسم الحساب</button></div>
+                </form>
+              </div>
             ) : (
-              <div className="account-readonly-note">اسم الحساب ثابت للمستخدمين العاديين. يمكنك تغيير كلمة المرور من البطاقة المجاورة.</div>
+              <div className="account-readonly-note">اسم الحساب واسم العرض ثابتان للمستخدمين العاديين. يمكنك تغيير كلمة المرور فقط.</div>
             )}
           </article>
         </div>
+
+        <article className="account-danger-card">
+          <div className="account-card-heading">
+            <span>منطقة حساسة</span>
+            <h2>حذف الحساب</h2>
+            <p>الحذف نهائي ويزيل ملفاتك ومنشوراتك وقوائمك وإعجاباتك ومحفوظاتك ومتابعاتك.</p>
+          </div>
+          <form className="stack-form account-delete-form" action="/api/account/delete" method="post">
+            <label>
+              كلمة المرور الحالية
+              <input name="current_password" type="password" autoComplete="current-password" required />
+            </label>
+            <label>
+              للتأكيد اكتب: حذف حسابي
+              <input name="confirmation" type="text" autoComplete="off" placeholder="حذف حسابي" required />
+            </label>
+            {isAdmin ? <small className="account-danger-note">لن يسمح النظام بحذف آخر أدمن فعّال حتى لا تبقى المنصة بلا إدارة.</small> : null}
+            <div><button className="button button-danger account-delete-button" type="submit">حذف الحساب نهائيًا</button></div>
+          </form>
+        </article>
       </div>
     </section>
   );
