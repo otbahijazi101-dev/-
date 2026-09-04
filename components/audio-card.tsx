@@ -4,7 +4,9 @@ type AudioCardProps = {
   category?: string | null;
   username?: string | null;
   displayName?: string | null;
-  audioUrl?: string | null;
+  mediaUrl?: string | null;
+  downloadUrl?: string | null;
+  mimeType?: string | null;
   publishedAt?: string | null;
 };
 
@@ -14,12 +16,15 @@ export function AudioCard({
   category,
   username,
   displayName,
-  audioUrl,
+  mediaUrl,
+  downloadUrl,
+  mimeType,
   publishedAt,
 }: AudioCardProps) {
   const dateLabel = publishedAt
     ? new Intl.DateTimeFormat('ar', { dateStyle: 'medium' }).format(new Date(publishedAt))
     : null;
+  const isVideo = Boolean(mimeType?.startsWith('video/'));
 
   return (
     <article className="audio-card">
@@ -33,20 +38,39 @@ export function AudioCard({
       <div className="audio-card-body">
         <div className="audio-card-meta">
           {category ? <span className="tag">{category}</span> : null}
+          <span>{isVideo ? 'فيديو' : 'صوت'}</span>
           {dateLabel ? <span>{dateLabel}</span> : null}
         </div>
         <h2>{title}</h2>
         <p className="creator-name">
-          {displayName || username || 'SoundPalestine'}
+          {displayName || username || 'راديو'}
           {username ? <span className="creator-handle"> @{username}</span> : null}
         </p>
         {description ? <p className="audio-description">{description}</p> : null}
-        {audioUrl ? (
-          <audio className="audio-player" controls preload="none" src={audioUrl}>
-            متصفحك لا يدعم تشغيل الصوت.
-          </audio>
+        {mediaUrl ? (
+          isVideo ? (
+            <video
+              controls
+              preload="metadata"
+              src={mediaUrl}
+              style={{ width: '100%', maxHeight: 360, borderRadius: 12, background: '#000', marginTop: 'auto' }}
+            >
+              متصفحك لا يدعم تشغيل الفيديو.
+            </video>
+          ) : (
+            <>
+              <audio className="audio-player" controls preload="none" src={mediaUrl}>
+                متصفحك لا يدعم تشغيل الصوت.
+              </audio>
+              <div style={{ marginTop: 12 }}>
+                <a className="button button-ghost button-small" href={downloadUrl || mediaUrl} download>
+                  تنزيل الصوت
+                </a>
+              </div>
+            </>
+          )
         ) : (
-          <div className="audio-unavailable">الملف الصوتي غير متاح مؤقتًا.</div>
+          <div className="audio-unavailable">الملف غير متاح مؤقتًا.</div>
         )}
       </div>
     </article>
