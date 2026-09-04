@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { validateUsername, usernameToInternalEmail } from '@/lib/auth';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminSupabaseClient, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 
 function withError(request: Request, message: string) {
   const url = new URL('/login', request.url);
@@ -22,7 +23,9 @@ export async function POST(request: Request) {
     return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
   }
 
+  const supabase = await createServerSupabaseClient();
   let email: string;
+
   if (rawIdentifier.includes('@')) {
     email = rawIdentifier.toLocaleLowerCase('en-US');
   } else {
@@ -30,10 +33,27 @@ export async function POST(request: Request) {
     if (!usernameResult.ok) {
       return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
     }
-    email = usernameToInternalEmail(usernameResult.username);
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', usernameResult.username)
+      .maybeSingle();
+
+    if (profile && isSupabaseAdminConfigured) {
+      const admin = createAdminSupabaseClient();
+      const { data: authUser, error: authUserError } = await admin.auth.admin.getUserById(profile.id);
+
+      if (authUserError || !authUser.user?.email) {
+        return withError(request, 'اسم المستخدم أو البريد أو كلمة المرور غير صحيحة.');
+      }
+
+      email = authUser.user.email;
+    } else {
+      email = usernameToInternalEmail(usernameResult.username);
+    }
   }
 
-  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
