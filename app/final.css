@@ -1,0 +1,23 @@
+/* Final compact feed behavior. */
+.media-compact-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.media-list-card { direction: rtl; grid-template-columns: 96px minmax(0,1fr) !important; min-height: 96px !important; }
+.media-list-thumb { min-width: 0; }
+.media-thumb,
+.media-thumb-video { width: 96px !important; height: 96px !important; border-radius: 11px !important; }
+.media-list-copy { padding: 12px 14px !important; gap: 3px !important; }
+.media-list-title-row { align-items: center !important; }
+.media-list-card h2 { font-size: 17px !important; }
+.media-list-card .track-waveform { height: 22px !important; margin-top: 2px !important; }
+.media-inline-play { color: #e9eeeb !important; }
+.media-actions-compact { align-self: center !important; }
+.media-actions-compact > summary { font-size: 17px !important; letter-spacing: 1px; }
+
+@media (max-width: 700px) {
+  .media-list-card { grid-template-columns: 72px minmax(0,1fr) !important; min-height: 72px !important; }
+  .media-thumb,
+  .media-thumb-video { width: 72px !important; height: 72px !important; border-radius: 9px !important; }
+  .media-list-copy { padding: 8px 10px !important; }
+  .media-list-card h2 { font-size: 14px !important; }
+  .media-inline-play { font-size: 10px !important; }
+  .media-list-meta { font-size: 9px !important; }
+}

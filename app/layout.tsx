@@ -1,11 +1,20 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './features.css';
 import './polish.css';
 import './account-overrides.css';
+import './media-row.css';
+import './dark.css';
+import './final.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
+import { PwaRegister } from '@/components/pwa-register';
 import { getSiteName } from '@/lib/site-settings';
+
+export const viewport: Viewport = {
+  themeColor: '#050606',
+  colorScheme: 'dark',
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteName = await getSiteName();
@@ -16,6 +25,19 @@ export async function generateMetadata(): Promise<Metadata> {
       template: `%s | ${siteName}`,
     },
     description: 'مساحة مفتوحة للاستماع والمشاهدة ومشاركة المحتوى بعد المراجعة.',
+    manifest: '/manifest.webmanifest',
+    icons: {
+      icon: [
+        { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+        { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      ],
+      apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+    },
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: 'black-translucent',
+      title: siteName,
+    },
   };
 }
 
@@ -25,6 +47,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="ar" dir="rtl">
       <body>
+        <PwaRegister />
         <SiteHeader />
         <main>{children}</main>
         <footer className="site-footer">

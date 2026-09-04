@@ -6,14 +6,42 @@ import type { RadioItem } from '@/components/radio-player';
 
 type Playlist = { id: string; title: string };
 
+type OfflineEntry = {
+  id: string;
+  title: string;
+  creator: string;
+  mimeType: string;
+  savedAt: number;
+};
+
+const OFFLINE_CACHE = 'radio-offline-media-v1';
+const OFFLINE_KEY = 'radio-offline-tracks-v1';
+
+function readOfflineEntries(): OfflineEntry[] {
+  try {
+    const value = localStorage.getItem(OFFLINE_KEY);
+    if (!value) return [];
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function TrackActions({
   item,
   userId,
   ownerId,
+  compact = false,
+  downloadUrl,
+  downloadLabel = 'تحميل',
 }: {
   item: RadioItem;
   userId?: string | null;
   ownerId?: string | null;
+  compact?: boolean;
+  downloadUrl?: string | null;
+  downloadLabel?: string;
 }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [liked, setLiked] = useState(false);
@@ -22,6 +50,9 @@ export function TrackActions({
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [playlistId, setPlaylistId] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
+  const [savingOffline, setSavingOffline] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
+  const isAudio = Boolean(item.mimeType?.startsWith('audio/'));
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('radio-register', { detail: item }));
@@ -29,6 +60,11 @@ export function TrackActions({
       window.dispatchEvent(new CustomEvent('radio-unregister', { detail: { id: item.id } }));
     };
   }, [item]);
+
+  useEffect(() => {
+    if (!isAudio) return;
+    setSavedOffline(readOfflineEntries().some((entry) => entry.id === item.id));
+  }, [isAudio, item.id]);
 
   useEffect(() => {
     if (!userId) return;
@@ -117,11 +153,91 @@ export function TrackActions({
     setNotice(error?.code === '23505' ? 'المقطع موجود بالفعل في هذه القائمة.' : error ? 'تعذر الإضافة.' : 'أضيف إلى القائمة.');
   }
 
+  async function saveOffline() {
+    if (!isAudio || savingOffline) return;
+    if (!('caches' in window)) {
+      setNotice('الحفظ دون إنترنت غير مدعوم في هذا المتصفح.');
+      return;
+    }
+
+    setSavingOffline(true);
+    setNotice('جارٍ الحفظ على الجهاز...');
+    try {
+      const response = await fetch(item.src);
+      if (!response.ok) throw new Error('download_failed');
+
+      const cache = await caches.open(OFFLINE_CACHE);
+      const cacheKey = new Request(`/offline-media/${encodeURIComponent(item.id)}`);
+      await cache.put(cacheKey, response.clone());
+
+      const current = readOfflineEntries().filter((entry) => entry.id !== item.id);
+      const next: OfflineEntry[] = [
+        {
+          id: item.id,
+          title: item.title,
+          creator: item.creator,
+          mimeType: item.mimeType || 'audio/mpeg',
+          savedAt: Date.now(),
+        },
+        ...current,
+      ];
+      localStorage.setItem(OFFLINE_KEY, JSON.stringify(next));
+      setSavedOffline(true);
+      setNotice('تم الحفظ. سيعمل من «تنزيلاتي» بدون إنترنت.');
+      window.dispatchEvent(new CustomEvent('radio-offline-changed'));
+
+      if (navigator.storage?.persist) {
+        void navigator.storage.persist().catch(() => false);
+      }
+    } catch {
+      setNotice('تعذر الحفظ دون إنترنت. حاول مرة أخرى أثناء اتصال جيد.');
+    } finally {
+      setSavingOffline(false);
+    }
+  }
+
+  if (compact) {
+    return (
+      <div className="media-compact-controls">
+        <button className="media-inline-play" type="button" onClick={play}>تشغيل</button>
+        <details className="media-actions-compact">
+          <summary aria-label="خيارات المقطع">•••</summary>
+          <div className="media-action-popover">
+            <button type="button" onClick={play}>تشغيل الآن</button>
+            <button type="button" onClick={queue}>إضافة إلى الانتظار</button>
+            {isAudio ? (
+              <button type="button" onClick={saveOffline} disabled={savingOffline}>
+                {savingOffline ? 'جارٍ الحفظ...' : savedOffline ? 'محفوظ دون إنترنت' : 'حفظ دون إنترنت'}
+              </button>
+            ) : null}
+            <button type="button" onClick={toggleLike}>{liked ? 'إلغاء الإعجاب' : 'إعجاب'}</button>
+            <button type="button" onClick={toggleFavorite}>{favorite ? 'إزالة من المحفوظات' : 'حفظ'}</button>
+            {ownerId && ownerId !== userId ? (
+              <button type="button" onClick={toggleFollow}>{following ? 'إلغاء المتابعة' : 'متابعة الناشر'}</button>
+            ) : null}
+            <button type="button" onClick={share}>مشاركة</button>
+            {downloadUrl ? <a href={downloadUrl} download>{downloadLabel}</a> : null}
+            {userId && playlists.length ? (
+              <div className="playlist-inline-add">
+                <select value={playlistId} onChange={(e) => setPlaylistId(e.target.value)} aria-label="قائمة التشغيل">
+                  {playlists.map((playlist) => <option value={playlist.id} key={playlist.id}>{playlist.title}</option>)}
+                </select>
+                <button type="button" onClick={addToPlaylist}>أضف إلى القائمة</button>
+              </div>
+            ) : null}
+            {notice ? <small className="action-notice">{notice}</small> : null}
+          </div>
+        </details>
+      </div>
+    );
+  }
+
   return (
     <div className="track-actions-wrap">
       <div className="track-actions-row">
         <button className="button button-dark button-small" type="button" onClick={play}>تشغيل</button>
         <button className="button button-ghost button-small" type="button" onClick={queue}>انتظار</button>
+        {isAudio ? <button className="button button-ghost button-small" type="button" onClick={saveOffline}>{savedOffline ? 'دون إنترنت ✓' : 'دون إنترنت'}</button> : null}
         <button className="button button-ghost button-small" type="button" onClick={toggleLike}>{liked ? 'تم الإعجاب' : 'إعجاب'}</button>
         <button className="button button-ghost button-small" type="button" onClick={toggleFavorite}>{favorite ? 'محفوظ' : 'حفظ'}</button>
         {ownerId && ownerId !== userId ? (

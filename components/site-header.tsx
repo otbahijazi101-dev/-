@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PwaInstallButton } from '@/components/pwa-install-button';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSiteName } from '@/lib/site-settings';
@@ -32,6 +33,7 @@ export async function SiteHeader() {
         <nav className="main-nav" aria-label="التنقل الرئيسي">
           <Link href="/">المكتبة</Link>
           <Link href="/search">بحث</Link>
+          <Link href="/offline">تنزيلاتي</Link>
           {username ? <Link href="/following">أتابعهم</Link> : null}
           {username ? <Link href="/favorites">المحفوظات</Link> : null}
           {username ? <Link href="/playlists">قوائمي</Link> : null}
@@ -45,6 +47,7 @@ export async function SiteHeader() {
         </form>
 
         <div className="header-actions">
+          <PwaInstallButton />
           {username ? (
             <>
               <Link className="account-chip" href="/account">@{username}</Link>

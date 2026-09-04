@@ -27,6 +27,14 @@ function normalizeName(value?: string | null) {
   return value?.trim().toLocaleLowerCase('en-US') ?? '';
 }
 
+function formatDuration(value?: number | null) {
+  if (!value || !Number.isFinite(value) || value <= 0) return null;
+  const total = Math.round(value);
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 export function AudioCard({
   id,
   ownerId,
@@ -48,6 +56,7 @@ export function AudioCard({
   const dateLabel = publishedAt
     ? new Intl.DateTimeFormat('ar', { dateStyle: 'medium' }).format(new Date(publishedAt))
     : null;
+  const durationLabel = formatDuration(durationSeconds);
   const isVideo = Boolean(mimeType?.startsWith('video/'));
   const href = `/#track-${id}`;
   const hasDistinctDisplayName = Boolean(
@@ -70,47 +79,61 @@ export function AudioCard({
   } : null;
 
   return (
-    <article id={`track-${id}`} className={`audio-card ${isVideo ? 'audio-card-video' : ''}`}>
-      {!isVideo ? (
-        coverUrl ? (
-          <div className="audio-cover audio-cover-image" style={{ backgroundImage: `url(${coverUrl})` }} aria-label={title} />
+    <article id={`track-${id}`} className="audio-card media-list-card">
+      <div className="media-list-thumb">
+        {isVideo && mediaUrl ? (
+          <VideoPreview src={mediaUrl} title={title} poster={coverUrl} variant="compact" />
         ) : (
-          <div className="audio-cover" aria-hidden="true">
-            <div className="waveform">
-              {Array.from({ length: 16 }).map((_, index) => <span key={index} style={{ height: `${18 + ((index * 17) % 54)}%` }} />)}
-            </div>
+          <div
+            className="media-thumb"
+            style={coverUrl ? { backgroundImage: `url(${coverUrl})` } : undefined}
+            aria-label={title}
+          >
+            {!coverUrl ? (
+              <div className="media-thumb-wave" aria-hidden="true">
+                {Array.from({ length: 9 }).map((_, index) => (
+                  <span key={index} style={{ height: `${24 + ((index * 19) % 66)}%` }} />
+                ))}
+              </div>
+            ) : null}
           </div>
-        )
-      ) : null}
+        )}
+      </div>
 
-      <div className={`audio-card-body ${isVideo ? 'audio-card-body-video' : ''}`}>
-        {isVideo && mediaUrl ? <VideoPreview src={mediaUrl} title={title} poster={coverUrl} /> : null}
-
-        <div className={isVideo ? 'video-card-copy' : undefined}>
-          <div className="audio-card-meta">
-            {category ? <span className="tag">{category}</span> : null}
-            <span>{isVideo ? 'فيديو' : 'صوت'}</span>
-            {dateLabel ? <span>{dateLabel}</span> : null}
-          </div>
+      <div className="media-list-copy">
+        <div className="media-list-title-row">
           <h2>{title}</h2>
-          <p className="creator-name">
-            {username ? (
-              <Link className="creator-link" href={`/publisher/${encodeURIComponent(username)}`}>
-                {creatorLabel}
-              </Link>
-            ) : creatorLabel}
-          </p>
-          {description ? <p className="audio-description">{description}</p> : null}
-          {tags?.length ? <div className="track-tags">{tags.map((tag) => <Link href={`/search?q=${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div> : null}
-
-          {!isVideo && item ? <TrackWaveform item={item} waveform={waveform} durationSeconds={durationSeconds} /> : null}
-          {item ? <TrackActions item={item} userId={userId} ownerId={ownerId} /> : null}
-
-          {mediaUrl && downloadUrl ? (
-            <div className="download-row"><a className="button button-ghost button-small" href={downloadUrl} download>{isVideo ? 'تحميل الفيديو' : 'تحميل الصوت'}</a></div>
+          {item ? (
+            <TrackActions
+              item={item}
+              userId={userId}
+              ownerId={ownerId}
+              compact
+              downloadUrl={downloadUrl}
+              downloadLabel={isVideo ? 'تحميل الفيديو' : 'تحميل الصوت'}
+            />
           ) : null}
-          {!mediaUrl ? <div className="audio-unavailable">الملف غير متاح مؤقتًا.</div> : null}
         </div>
+
+        <p className="creator-name">
+          {username ? (
+            <Link className="creator-link" href={`/publisher/${encodeURIComponent(username)}`}>
+              {creatorLabel}
+            </Link>
+          ) : creatorLabel}
+        </p>
+
+        <div className="media-list-meta">
+          <span>{isVideo ? 'فيديو' : 'صوت'}</span>
+          {durationLabel ? <span>{durationLabel}</span> : null}
+          {category ? <span>{category}</span> : null}
+          {dateLabel ? <span>{dateLabel}</span> : null}
+        </div>
+
+        {description ? <p className="media-list-description">{description}</p> : null}
+        {tags?.length ? <div className="track-tags">{tags.map((tag) => <Link href={`/search?q=${encodeURIComponent(tag)}`} key={tag}>#{tag}</Link>)}</div> : null}
+        {!isVideo && item ? <TrackWaveform item={item} waveform={waveform} durationSeconds={durationSeconds} /> : null}
+        {!mediaUrl ? <div className="audio-unavailable">الملف غير متاح مؤقتًا.</div> : null}
       </div>
     </article>
   );
