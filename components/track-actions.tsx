@@ -16,6 +16,7 @@ export function TrackActions({
   ownerId?: string | null;
 }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const [liked, setLiked] = useState(false);
   const [favorite, setFavorite] = useState(false);
   const [following, setFollowing] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -23,14 +24,21 @@ export function TrackActions({
   const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('radio-register', { detail: item }));
+    return () => window.dispatchEvent(new CustomEvent('radio-unregister', { detail: { id: item.id } }));
+  }, [item]);
+
+  useEffect(() => {
     if (!userId) return;
     void Promise.all([
+      supabase.from('likes').select('track_id').eq('user_id', userId).eq('track_id', item.id).maybeSingle(),
       supabase.from('favorites').select('track_id').eq('user_id', userId).eq('track_id', item.id).maybeSingle(),
       ownerId && ownerId !== userId
         ? supabase.from('follows').select('followed_id').eq('follower_id', userId).eq('followed_id', ownerId).maybeSingle()
         : Promise.resolve({ data: null }),
       supabase.from('playlists').select('id,title').eq('owner_id', userId).order('created_at', { ascending: false }),
-    ]).then(([favoriteResult, followResult, playlistResult]) => {
+    ]).then(([likeResult, favoriteResult, followResult, playlistResult]) => {
+      setLiked(Boolean(likeResult.data));
       setFavorite(Boolean(favoriteResult.data));
       setFollowing(Boolean(followResult.data));
       const rows = (playlistResult.data ?? []) as Playlist[];
@@ -38,6 +46,12 @@ export function TrackActions({
       if (rows[0]) setPlaylistId(rows[0].id);
     });
   }, [item.id, ownerId, supabase, userId]);
+
+  function requireLogin() {
+    if (userId) return true;
+    window.location.href = '/login';
+    return false;
+  }
 
   function play() {
     window.dispatchEvent(new CustomEvent('radio-play', { detail: item }));
@@ -48,11 +62,19 @@ export function TrackActions({
     setNotice('أضيف إلى قائمة الانتظار.');
   }
 
-  async function toggleFavorite() {
-    if (!userId) {
-      window.location.href = '/login';
-      return;
+  async function toggleLike() {
+    if (!requireLogin() || !userId) return;
+    if (liked) {
+      await supabase.from('likes').delete().eq('user_id', userId).eq('track_id', item.id);
+      setLiked(false);
+    } else {
+      const { error } = await supabase.from('likes').insert({ user_id: userId, track_id: item.id });
+      if (!error) setLiked(true);
     }
+  }
+
+  async function toggleFavorite() {
+    if (!requireLogin() || !userId) return;
     if (favorite) {
       await supabase.from('favorites').delete().eq('user_id', userId).eq('track_id', item.id);
       setFavorite(false);
@@ -63,11 +85,7 @@ export function TrackActions({
   }
 
   async function toggleFollow() {
-    if (!userId) {
-      window.location.href = '/login';
-      return;
-    }
-    if (!ownerId || ownerId === userId) return;
+    if (!requireLogin() || !userId || !ownerId || ownerId === userId) return;
     if (following) {
       await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', ownerId);
       setFollowing(false);
@@ -81,17 +99,14 @@ export function TrackActions({
     const url = item.href ? new URL(item.href, window.location.origin).toString() : window.location.href;
     if (navigator.share) {
       await navigator.share({ title: item.title, url }).catch(() => undefined);
-    } else {
-      await navigator.clipboard.writeText(url);
-      setNotice('تم نسخ الرابط.');
+      return;
     }
+    await navigator.clipboard.writeText(url);
+    setNotice('تم نسخ رابط المقطع.');
   }
 
   async function addToPlaylist() {
-    if (!userId) {
-      window.location.href = '/login';
-      return;
-    }
+    if (!requireLogin() || !userId) return;
     if (!playlistId) {
       setNotice('أنشئ قائمة تشغيل أولًا.');
       return;
@@ -105,6 +120,7 @@ export function TrackActions({
       <div className="track-actions-row">
         <button className="button button-dark button-small" type="button" onClick={play}>▶ تشغيل</button>
         <button className="button button-ghost button-small" type="button" onClick={queue}>+ قائمة الانتظار</button>
+        <button className="button button-ghost button-small" type="button" onClick={toggleLike}>{liked ? '♥ أعجبني' : '♡ إعجاب'}</button>
         <button className="button button-ghost button-small" type="button" onClick={toggleFavorite}>{favorite ? '★ محفوظ' : '☆ حفظ'}</button>
         {ownerId && ownerId !== userId ? (
           <button className="button button-ghost button-small" type="button" onClick={toggleFollow}>{following ? 'متابَع ✓' : 'متابعة'}</button>
