@@ -21,8 +21,8 @@ type PublicTrack = PublicTrackRow & {
 };
 
 function downloadFileName(track: PublicTrackRow) {
-  const extension = track.storage_path.split('.').pop() || 'audio';
-  const safeTitle = track.title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'audio';
+  const extension = track.storage_path.split('.').pop() || 'media';
+  const safeTitle = track.title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'media';
   return `${safeTitle}.${extension}`;
 }
 
@@ -52,18 +52,14 @@ export default async function HomePage() {
             .from('audio')
             .createSignedUrl(track.storage_path, 60 * 60);
 
-          let downloadUrl: string | null = null;
-          if (!track.mime_type?.startsWith('video/')) {
-            const { data: downloadSigned } = await supabase.storage
-              .from('audio')
-              .createSignedUrl(track.storage_path, 60 * 60, { download: downloadFileName(track) });
-            downloadUrl = downloadSigned?.signedUrl ?? null;
-          }
+          const { data: downloadSigned } = await supabase.storage
+            .from('audio')
+            .createSignedUrl(track.storage_path, 60 * 60, { download: downloadFileName(track) });
 
           return {
             ...track,
             mediaUrl: signed?.signedUrl ?? null,
-            downloadUrl,
+            downloadUrl: downloadSigned?.signedUrl ?? null,
           };
         }),
       );
