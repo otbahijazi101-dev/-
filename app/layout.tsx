@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import './features.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { getSiteName } from '@/lib/site-settings';
