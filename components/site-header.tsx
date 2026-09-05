@@ -25,42 +25,44 @@ export async function SiteHeader() {
   }
 
   return (
-    <header className="site-header">
-      <div className="container header-inner">
-        <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}>
-          <span className="brand-name">{siteName}</span>
-        </Link>
+    <>
+      <header className="site-header">
+        <div className="container header-inner">
+          <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}>
+            <span className="brand-name">{siteName}</span>
+          </Link>
 
-        <nav className="main-nav" aria-label="التنقل الرئيسي">
-          <Link href="/">المكتبة</Link>
-          <Link href="/search">بحث</Link>
-          <Link href="/offline">تنزيلاتي</Link>
-          {username ? <Link href="/following">أتابعهم</Link> : null}
-          {username ? <Link href="/favorites">المحفوظات</Link> : null}
-          {username ? <Link href="/playlists">قوائمي</Link> : null}
-          {username ? <Link href="/upload">رفع</Link> : null}
-          {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
-          {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
-        </nav>
+          <nav className="main-nav" aria-label="التنقل الرئيسي">
+            <Link href="/">المكتبة</Link>
+            <Link href="/search">بحث</Link>
+            <Link href="/offline">تنزيلاتي</Link>
+            {username ? <Link href="/following">أتابعهم</Link> : null}
+            {username ? <Link href="/favorites">المحفوظات</Link> : null}
+            {username ? <Link href="/playlists">قوائمي</Link> : null}
+            {username ? <Link href="/upload">رفع</Link> : null}
+            {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
+            {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
+          </nav>
 
-        <form className="header-search" action="/search">
-          <input name="q" placeholder="ابحث في الراديو" aria-label="بحث" />
-        </form>
+          <form className="header-search" action="/search">
+            <input name="q" placeholder="ابحث في الراديو" aria-label="بحث" />
+          </form>
 
-        <div className="header-actions">
-          <PwaInstallButton />
-          {username ? (
-            <>
-              <Link className="account-chip" href="/account">@{username}</Link>
-              <form action="/api/auth/logout" method="post"><button className="button button-ghost button-small" type="submit">خروج</button></form>
-            </>
-          ) : (
-            <><Link className="button button-ghost button-small" href="/login">دخول</Link><Link className="button button-dark button-small" href="/register">إنشاء حساب</Link></>
-          )}
+          <div className="header-actions">
+            <PwaInstallButton />
+            {username ? (
+              <>
+                <Link className="account-chip" href="/account">@{username}</Link>
+                <form action="/api/auth/logout" method="post"><button className="button button-ghost button-small" type="submit">خروج</button></form>
+              </>
+            ) : (
+              <><Link className="button button-ghost button-small" href="/login">دخول</Link><Link className="button button-dark button-small" href="/register">إنشاء حساب</Link></>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
 
       <MobileNav loggedIn={Boolean(username)} isAdmin={isAdmin} />
-    </header>
+    </>
   );
 }
