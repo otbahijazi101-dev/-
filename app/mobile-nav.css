@@ -1,8 +1,11 @@
-/* Mobile app-style navigation. Desktop keeps the existing top navigation. */
+/* App-style navigation. Keep desktop top navigation, but show this on phones, tablets, and installed PWA. */
 .mobile-bottom-nav { display: none; }
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (display-mode: standalone), (max-width: 1366px) and (any-pointer: coarse) {
   body { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
+
+  /* Avoid showing the same sections twice on iPad/PWA. */
+  .main-nav { display: none !important; }
 
   .mobile-bottom-nav {
     position: fixed;
@@ -49,7 +52,6 @@
   }
 
   .mobile-bottom-nav-item svg { flex: 0 0 auto; }
-
   .mobile-bottom-nav-item:active { transform: scale(.97); }
 
   .mobile-bottom-nav-item.is-active {
