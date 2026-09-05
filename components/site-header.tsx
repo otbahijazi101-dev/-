@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PwaInstallButton } from '@/components/pwa-install-button';
+import { MobileNav } from '@/components/mobile-nav';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSiteName } from '@/lib/site-settings';
@@ -58,6 +59,8 @@ export async function SiteHeader() {
           )}
         </div>
       </div>
+
+      <MobileNav loggedIn={Boolean(username)} isAdmin={isAdmin} />
     </header>
   );
 }
