@@ -1,0 +1,77 @@
+/* Mobile app-style navigation. Desktop keeps the existing top navigation. */
+.mobile-bottom-nav { display: none; }
+
+@media (max-width: 900px) {
+  body { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }
+
+  .mobile-bottom-nav {
+    position: fixed;
+    z-index: 110;
+    inset-inline: 10px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    display: block;
+    padding: 5px;
+    border: 1px solid #173629;
+    border-radius: 24px;
+    background: rgba(5, 9, 7, .96);
+    box-shadow: 0 14px 42px rgba(0,0,0,.46);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .mobile-bottom-nav-track {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .mobile-bottom-nav-track::-webkit-scrollbar { display: none; }
+
+  .mobile-bottom-nav-item {
+    min-width: 88px;
+    height: 66px;
+    padding: 7px 10px 6px;
+    border-radius: 18px;
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: #86928b;
+    font-size: 11px;
+    font-weight: 800;
+    scroll-snap-align: center;
+    transition: background .16s ease, color .16s ease, transform .16s ease;
+  }
+
+  .mobile-bottom-nav-item svg { flex: 0 0 auto; }
+
+  .mobile-bottom-nav-item:active { transform: scale(.97); }
+
+  .mobile-bottom-nav-item.is-active {
+    color: #e8f5ed;
+    background: linear-gradient(180deg, #124833, #0b3828);
+    box-shadow: inset 0 0 0 1px rgba(104, 175, 137, .12);
+  }
+
+  .mobile-bottom-nav-item.is-active svg { color: #dff4e8; }
+
+  /* Keep the media player above the navigation bar instead of covering it. */
+  .radio-player-shell {
+    bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .radio-player-video {
+    bottom: calc(196px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .mobile-bottom-nav { inset-inline: 7px; border-radius: 21px; }
+  .mobile-bottom-nav-item { min-width: 82px; height: 62px; font-size: 10.5px; border-radius: 16px; }
+  .mobile-bottom-nav-item svg { width: 21px; height: 21px; }
+}
