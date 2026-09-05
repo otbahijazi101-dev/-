@@ -10,6 +10,7 @@ import './mobile-nav.css';
 import './review.css';
 import './enhancements.css';
 import './track-tap.css';
+import './soundcloud.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { TrackTapController } from '@/components/track-tap-controller';
@@ -17,8 +18,8 @@ import { PwaRegister } from '@/components/pwa-register';
 import { getSiteName } from '@/lib/site-settings';
 
 export const viewport: Viewport = {
-  themeColor: '#062d20',
-  colorScheme: 'dark',
+  themeColor: '#ff5500',
+  colorScheme: 'light',
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     appleWebApp: {
       capable: true,
-      statusBarStyle: 'black-translucent',
+      statusBarStyle: 'default',
       title: siteName,
     },
   };
