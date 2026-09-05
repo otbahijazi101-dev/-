@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+type PlaybackOwner = { username: string; display_name: string | null };
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -17,7 +19,11 @@ export async function GET(
 
   if (error || !track) return NextResponse.json({ error: 'not_found' }, { status: 404 });
 
-  const owner = track.owner as { username: string; display_name: string | null } | null;
+  const rawOwner = track.owner as unknown;
+  const owner: PlaybackOwner | null = Array.isArray(rawOwner)
+    ? ((rawOwner[0] as PlaybackOwner | undefined) ?? null)
+    : ((rawOwner as PlaybackOwner | null) ?? null);
+
   const [{ data: media }, cover] = await Promise.all([
     supabase.storage.from('audio').createSignedUrl(track.storage_path, 3600),
     track.cover_path
