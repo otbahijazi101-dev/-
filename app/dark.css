@@ -51,6 +51,16 @@ main { background: #050606; }
 .hero-refined::after { opacity: .32; }
 .hero h1 { color: #fff; }
 .hero-copy > p { color: #b4bbb6 !important; }
+.hero-actions .button-light {
+  background: #f2f5f3 !important;
+  color: #0b3b29 !important;
+  border-color: #f2f5f3 !important;
+  opacity: 1 !important;
+}
+.hero-actions .button-light:hover {
+  background: #e3ece7 !important;
+  color: #082d20 !important;
+}
 .hero-search { background: #0e110f !important; border-color: #242925 !important; }
 .hero-search input { color: #fff !important; }
 .hero-search button { background: #f2f5f3 !important; color: #0a0c0b !important; }
