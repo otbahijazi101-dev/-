@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
+import { createAdminSupabaseClient, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+
+function adminRedirect(request: Request, state: string) {
+  const url = new URL('/admin', request.url);
+  url.searchParams.set('action', state);
+  return NextResponse.redirect(url, { status: 303 });
+}
 
 export async function POST(
   request: Request,
@@ -14,24 +21,50 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL('/login', request.url), { status: 303 });
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') return new NextResponse('Forbidden', { status: 403 });
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, status')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profile?.role !== 'admin' || profile?.status !== 'active') {
+    return new NextResponse('Forbidden', { status: 403 });
+  }
+  if (!isSupabaseAdminConfigured) return adminRedirect(request, 'error');
+
+  const admin = createAdminSupabaseClient();
 
   if (action === 'publish') {
-    await supabase
+    const { error } = await admin
       .from('tracks')
       .update({ status: 'published', published_at: new Date().toISOString(), rejection_reason: null })
       .eq('id', id);
-  } else if (action === 'reject') {
-    await supabase
+    return adminRedirect(request, error ? 'error' : 'published');
+  }
+
+  if (action === 'reject') {
+    const { error } = await admin
       .from('tracks')
       .update({ status: 'rejected', published_at: null, rejection_reason: reason || 'لم تتم الموافقة على الملف.' })
       .eq('id', id);
-  } else if (action === 'delete') {
-    const { data: track } = await supabase.from('tracks').select('storage_path').eq('id', id).single();
-    if (track?.storage_path) await supabase.storage.from('audio').remove([track.storage_path]);
-    await supabase.from('tracks').delete().eq('id', id);
+    return adminRedirect(request, error ? 'error' : 'rejected');
   }
 
-  return NextResponse.redirect(new URL('/admin', request.url), { status: 303 });
+  if (action === 'delete') {
+    const { data: track, error: trackError } = await admin
+      .from('tracks')
+      .select('storage_path, cover_path')
+      .eq('id', id)
+      .maybeSingle();
+    if (trackError || !track) return adminRedirect(request, 'error');
+
+    const { error: deleteError } = await admin.from('tracks').delete().eq('id', id);
+    if (deleteError) return adminRedirect(request, 'error');
+
+    if (track.storage_path) await admin.storage.from('audio').remove([track.storage_path]);
+    if (track.cover_path) await admin.storage.from('covers').remove([track.cover_path]);
+    return adminRedirect(request, 'deleted');
+  }
+
+  return new NextResponse('Bad Request', { status: 400 });
 }

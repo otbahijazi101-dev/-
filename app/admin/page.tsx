@@ -20,14 +20,22 @@ type AdminTrack = {
   owner: { username: string; display_name: string | null } | null;
 };
 
+function creatorLabel(owner: AdminTrack['owner']) {
+  if (!owner) return 'ناشر غير معروف';
+  const display = owner.display_name?.trim();
+  const username = owner.username.trim();
+  if (!display || display.toLocaleLowerCase('en-US') === username.toLocaleLowerCase('en-US')) return `@${username}`;
+  return `${display} — @${username}`;
+}
+
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ settings?: string }>;
+  searchParams: Promise<{ settings?: string; action?: string }>;
 }) {
   if (!isSupabaseConfigured) redirect('/login');
 
-  const { settings } = await searchParams;
+  const { settings, action } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -61,6 +69,11 @@ export default async function AdminPage({
           <div><h1>لوحة الإدارة</h1><p>إدارة اسم المنصة ومراجعة الملفات الصوتية والفيديو.</p></div>
           <Link className="button button-dark" href="/upload">رفع كأدمن</Link>
         </div>
+
+        {action === 'published' ? <div className="form-alert form-success">تم اعتماد الملف ونشره.</div> : null}
+        {action === 'rejected' ? <div className="form-alert form-success">تم رفض الملف وحفظ القرار.</div> : null}
+        {action === 'deleted' ? <div className="form-alert form-success">تم حذف الملف.</div> : null}
+        {action === 'error' ? <div className="form-alert">تعذر تنفيذ العملية. لم يتم تأكيد أي تغيير.</div> : null}
 
         <div className="panel settings-panel">
           <div className="admin-card">
@@ -102,7 +115,7 @@ export default async function AdminPage({
                 <div className="admin-card-top">
                   <div>
                     <h3>{track.title}</h3>
-                    <p className="creator-name">{track.owner?.display_name || track.owner?.username} @{track.owner?.username}</p>
+                    <p className="creator-name">{creatorLabel(track.owner)}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <span className="tag">{isVideo ? 'فيديو' : 'صوت'}</span>

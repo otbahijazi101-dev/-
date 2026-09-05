@@ -54,18 +54,13 @@ export async function POST(request: Request) {
   const audioPaths = (tracks ?? []).map((track) => track.storage_path).filter(Boolean) as string[];
   const coverPaths = (tracks ?? []).map((track) => track.cover_path).filter(Boolean) as string[];
 
-  for (const batch of chunks(audioPaths)) {
-    const { error } = await admin.storage.from('audio').remove(batch);
-    if (error) return accountRedirect(request, 'update_failed');
-  }
-  for (const batch of chunks(coverPaths)) {
-    const { error } = await admin.storage.from('covers').remove(batch);
-    if (error) return accountRedirect(request, 'update_failed');
-  }
-
+  /* Delete identity/data first. FK cascades remove profile-owned rows. Storage cleanup then
+     becomes best-effort, so a storage failure can leave only unreachable orphan blobs. */
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) return accountRedirect(request, 'update_failed');
 
-  const response = NextResponse.redirect(new URL('/', request.url), { status: 303 });
-  return response;
+  for (const batch of chunks(audioPaths)) await admin.storage.from('audio').remove(batch);
+  for (const batch of chunks(coverPaths)) await admin.storage.from('covers').remove(batch);
+
+  return NextResponse.redirect(new URL('/', request.url), { status: 303 });
 }

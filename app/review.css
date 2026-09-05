@@ -1,0 +1,195 @@
+/* Final review layer: dark-green identity, strong contrast, clear states. Loaded last. */
+:root {
+  --paper: #03110c;
+  --surface: #071a12;
+  --ink: #f4fbf7;
+  --muted: #b5c5bb;
+  --line: #173a2a;
+  --green: #27c884;
+  --green-deep: #0f6b49;
+  --cream: #05150f;
+  --soft-green: #0a281c;
+}
+
+html { background: var(--paper); color-scheme: dark; }
+body, main { background: var(--paper) !important; color: var(--ink) !important; }
+
+.site-header {
+  background: rgba(3,17,12,.96) !important;
+  border-bottom-color: #153527 !important;
+}
+.brand-name { color: #fff !important; }
+.main-nav a { color: #c8d6ce !important; }
+.main-nav a:hover { color: #fff !important; }
+.account-chip { background: #0a281c !important; color: #9aebc2 !important; }
+
+.hero-refined {
+  background:
+    radial-gradient(circle at 82% 14%, rgba(39,200,132,.20), transparent 30%),
+    linear-gradient(125deg, #03110c 0%, #061a12 58%, #0a2a1d 100%) !important;
+}
+.hero-copy > p { color: #c2d0c7 !important; }
+.hero-actions .button-light {
+  background: #f5faf7 !important;
+  color: #083c29 !important;
+  border-color: #f5faf7 !important;
+  opacity: 1 !important;
+}
+.hero-actions .button-light:hover { background: #dcebe2 !important; color: #052c1e !important; }
+.hero-actions .button-outline-light { color: #f3fbf6 !important; border-color: #87aa98 !important; background: #092219 !important; }
+.hero-search { background: #071a12 !important; border-color: #28533e !important; }
+.hero-search input { color: #fff !important; }
+.hero-search input::placeholder { color: #a9b9af !important; opacity: 1 !important; }
+.hero-search button { background: #f5faf7 !important; color: #083c29 !important; }
+.hero-disc { background: repeating-radial-gradient(circle at center,#03110c 0 8px,#0b251a 9px 10px) !important; }
+.hero-disc-center { background: #106c49 !important; border-color: #e8f4ed !important; }
+
+.home-trust-strip { background: #04150f !important; border-color: #153527 !important; }
+.home-trust-row, .home-trust-row span { color: #bac9c0 !important; opacity: 1 !important; }
+.home-trust-row span { border-inline-start-color: #1b3e2e !important; }
+
+.section-heading > p,
+.dashboard-heading p,
+.account-heading p,
+.creator-name,
+.audio-description,
+.track-row p,
+.form-intro,
+.auth-switch,
+.account-card-heading p,
+.empty-state p,
+.following-feed-note { color: #b5c5bb !important; opacity: 1 !important; }
+.section-kicker, .eyebrow-dark { color: #41d69a !important; }
+
+.audio-card,
+.media-list-card,
+.panel,
+.auth-card,
+.account-card,
+.publisher-heading,
+.playlist-card,
+.empty-state,
+.track-row,
+.admin-card,
+.offline-row,
+.offline-install-note {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}
+.media-list-card:hover { background: #0a2117 !important; border-color: #24523c !important; }
+.media-list-card .creator-name { color: #b9c8bf !important; }
+.media-list-meta { color: #aebdb4 !important; }
+.media-list-description { color: #a5b5ab !important; }
+.media-inline-play { color: #f4fbf7 !important; }
+.media-inline-play:hover { color: #75e4ad !important; }
+.media-actions-compact > summary { color: #c4d1c9 !important; }
+.media-actions-compact > summary:hover,
+.media-actions-compact[open] > summary { color: #fff !important; background: #103022 !important; }
+.media-action-popover { background: #071a12 !important; border-color: #28533e !important; }
+.media-action-popover button,
+.media-action-popover a { color: #f1f8f4 !important; }
+.media-action-popover button:hover,
+.media-action-popover a:hover { background: #103022 !important; }
+
+.header-search input,
+.stack-form input,
+.stack-form textarea,
+.stack-form select,
+.admin-actions input,
+.playlist-inline-add select,
+.search-page-form input,
+.playlist-create-form input {
+  background: #061710 !important;
+  color: #f5fbf7 !important;
+  -webkit-text-fill-color: #f5fbf7 !important;
+  border-color: #28533e !important;
+}
+.header-search input::placeholder,
+.stack-form input::placeholder,
+.stack-form textarea::placeholder,
+.admin-actions input::placeholder,
+.search-page-form input::placeholder,
+.playlist-create-form input::placeholder { color: #9fb1a5 !important; opacity: 1 !important; }
+.stack-form small { color: #aebdb4 !important; }
+
+.button-dark {
+  background: #0f6b49 !important;
+  color: #ffffff !important;
+  border-color: #197a56 !important;
+}
+.button-dark:hover { background: #14875b !important; color: #fff !important; }
+.button-ghost {
+  background: #071a12 !important;
+  color: #eef7f1 !important;
+  border-color: #28533e !important;
+}
+.button-ghost:hover { background: #0c281c !important; border-color: #357054 !important; }
+button:disabled, .button:disabled { opacity: .58 !important; cursor: not-allowed !important; }
+
+/* Persistent player: explicit colors so --ink can never make labels disappear. */
+.radio-player-shell {
+  background: rgba(3,17,12,.98) !important;
+  border-top-color: #28533e !important;
+  color: #fff !important;
+}
+.radio-player-title strong { color: #fff !important; }
+.radio-player-title span { color: #b8c8be !important; }
+.player-text-button {
+  background: #0a2117 !important;
+  color: #f3faf6 !important;
+  border-color: #315c46 !important;
+  opacity: 1 !important;
+}
+.player-text-button:hover { background: #103022 !important; }
+.player-primary-control {
+  background: #137a52 !important;
+  color: #fff !important;
+  border-color: #1c9365 !important;
+}
+.player-primary-control:hover { background: #178e60 !important; }
+.player-close { color: #d5e0d9 !important; }
+.player-text-button:disabled {
+  background: #07130e !important;
+  color: #77877e !important;
+  border-color: #20392d !important;
+  opacity: 1 !important;
+}
+.player-wave span { background: #65766c !important; }
+.player-wave span.played { background: #2bd18b !important; }
+
+.mobile-bottom-nav {
+  background: rgba(3,17,12,.98) !important;
+  border-color: #28533e !important;
+}
+.mobile-bottom-nav-item { color: #b7c9be !important; opacity: 1 !important; }
+.mobile-bottom-nav-item svg { color: #b7c9be !important; }
+.mobile-bottom-nav-item.is-active {
+  color: #f5fff9 !important;
+  background: linear-gradient(180deg,#145f43,#0d4934) !important;
+  box-shadow: inset 0 0 0 1px rgba(109,220,165,.2) !important;
+}
+.mobile-bottom-nav-item.is-active svg { color: #f5fff9 !important; }
+
+.site-footer { background: #03110c !important; border-top-color: #153527 !important; color: #9aac9f !important; }
+
+/* Accessible keyboard/touch focus. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #42d79b !important;
+  outline-offset: 3px !important;
+}
+
+/* Keep destructive actions red and unmistakable. */
+.account-danger-card { background: linear-gradient(180deg,#1b0f10,#100b0b) !important; border-color: #6c3438 !important; }
+.account-delete-button, .button-danger { background: #b92b31 !important; color: #fff !important; border-color: #c73a40 !important; }
+.account-delete-button:hover, .button-danger:hover { background: #9e2026 !important; }
+
+@media (max-width: 700px) {
+  .player-text-button { min-height: 36px !important; font-size: 11px !important; }
+  .mobile-bottom-nav-item { color: #c0d0c6 !important; }
+}

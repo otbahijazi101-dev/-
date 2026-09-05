@@ -25,17 +25,13 @@ export async function POST(
 
   const admin = createAdminSupabaseClient();
 
-  if (track.storage_path) {
-    const { error: storageError } = await admin.storage.from('audio').remove([track.storage_path]);
-    if (storageError) return NextResponse.redirect(new URL('/my-tracks?delete=error', request.url), { status: 303 });
-  }
-
-  if (track.cover_path) {
-    await admin.storage.from('covers').remove([track.cover_path]);
-  }
-
+  /* Delete the database row first. A later storage failure leaves only an orphaned blob,
+     never a public track that points at a missing file. */
   const { error: deleteError } = await admin.from('tracks').delete().eq('id', id);
   if (deleteError) return NextResponse.redirect(new URL('/my-tracks?delete=error', request.url), { status: 303 });
+
+  if (track.storage_path) await admin.storage.from('audio').remove([track.storage_path]);
+  if (track.cover_path) await admin.storage.from('covers').remove([track.cover_path]);
 
   return NextResponse.redirect(new URL('/my-tracks?deleted=1', request.url), { status: 303 });
 }
