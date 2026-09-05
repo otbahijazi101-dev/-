@@ -8,6 +8,7 @@ import './dark.css';
 import './final.css';
 import './mobile-nav.css';
 import './review.css';
+import './enhancements.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { PwaRegister } from '@/components/pwa-register';

@@ -20,6 +20,15 @@ type AdminTrack = {
   owner: { username: string; display_name: string | null } | null;
 };
 
+type AdminUser = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  role: 'user' | 'admin';
+  status: 'active' | 'suspended';
+  created_at: string;
+};
+
 function creatorLabel(owner: AdminTrack['owner']) {
   if (!owner) return 'ناشر غير معروف';
   const display = owner.display_name?.trim();
@@ -31,11 +40,11 @@ function creatorLabel(owner: AdminTrack['owner']) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ settings?: string; action?: string }>;
+  searchParams: Promise<{ settings?: string; action?: string; userAction?: string }>;
 }) {
   if (!isSupabaseConfigured) redirect('/login');
 
-  const { settings, action } = await searchParams;
+  const { settings, action, userAction } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -50,23 +59,38 @@ export default async function AdminPage({
 
   const siteName = await getSiteName();
 
-  const { data } = await supabase
-    .from('tracks')
-    .select('id, title, description, category, storage_path, mime_type, status, created_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: true });
+  const [{ data: pendingData }, { data: usersData }, { data: ownerRows }] = await Promise.all([
+    supabase
+      .from('tracks')
+      .select('id, title, description, category, storage_path, mime_type, status, created_at, owner:profiles!tracks_owner_id_fkey(username, display_name)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('profiles')
+      .select('id, username, display_name, role, status, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200),
+    supabase.from('tracks').select('owner_id'),
+  ]);
 
-  const rows = (data ?? []) as unknown as AdminTrack[];
+  const rows = (pendingData ?? []) as unknown as AdminTrack[];
   const tracks = await Promise.all(rows.map(async (track) => {
     const { data: signed } = await supabase.storage.from('audio').createSignedUrl(track.storage_path, 3600);
     return { ...track, mediaUrl: signed?.signedUrl ?? null };
   }));
 
+  const users = (usersData ?? []) as AdminUser[];
+  const trackCounts = new Map<string, number>();
+  for (const row of ownerRows ?? []) {
+    const ownerId = row.owner_id as string;
+    trackCounts.set(ownerId, (trackCounts.get(ownerId) ?? 0) + 1);
+  }
+
   return (
     <section className="dashboard">
       <div className="container">
         <div className="dashboard-heading">
-          <div><h1>لوحة الإدارة</h1><p>إدارة اسم المنصة ومراجعة الملفات الصوتية والفيديو.</p></div>
+          <div><h1>لوحة الإدارة</h1><p>إدارة المنصة والمستخدمين ومراجعة الملفات الصوتية والفيديو.</p></div>
           <Link className="button button-dark" href="/upload">رفع كأدمن</Link>
         </div>
 
@@ -74,6 +98,12 @@ export default async function AdminPage({
         {action === 'rejected' ? <div className="form-alert form-success">تم رفض الملف وحفظ القرار.</div> : null}
         {action === 'deleted' ? <div className="form-alert form-success">تم حذف الملف.</div> : null}
         {action === 'error' ? <div className="form-alert">تعذر تنفيذ العملية. لم يتم تأكيد أي تغيير.</div> : null}
+        {userAction === 'suspended' ? <div className="form-alert form-success">تم إيقاف الحساب ومنع تسجيل الدخول إليه.</div> : null}
+        {userAction === 'activated' ? <div className="form-alert form-success">تمت إعادة تفعيل الحساب.</div> : null}
+        {userAction === 'self' ? <div className="form-alert">لا يمكنك إيقاف حسابك الإداري من هنا.</div> : null}
+        {userAction === 'last_admin' ? <div className="form-alert">لا يمكن إيقاف آخر أدمن فعّال.</div> : null}
+        {userAction === 'missing' ? <div className="form-alert">الحساب المطلوب غير موجود.</div> : null}
+        {userAction === 'error' ? <div className="form-alert">تعذر تغيير حالة الحساب. لم يتم اعتماد تغيير جزئي.</div> : null}
 
         <div className="panel settings-panel">
           <div className="admin-card">
@@ -94,10 +124,44 @@ export default async function AdminPage({
                 <input name="site_name" defaultValue={siteName} maxLength={80} required />
                 <small>الاسم الحالي: {siteName}</small>
               </label>
-              <div>
-                <button className="button button-dark button-small" type="submit">حفظ الاسم</button>
-              </div>
+              <div><button className="button button-dark button-small" type="submit">حفظ الاسم</button></div>
             </form>
+          </div>
+        </div>
+
+        <div className="dashboard-heading dashboard-heading-compact">
+          <div><h2>إدارة المستخدمين</h2><p>{users.length} حسابًا ظاهرًا في لوحة الإدارة.</p></div>
+        </div>
+
+        <div className="panel admin-users-panel">
+          <div className="admin-users-list">
+            {users.map((account) => {
+              const ownAccount = account.id === user.id;
+              const displayName = account.display_name?.trim();
+              return (
+                <article className="admin-user-row" key={account.id}>
+                  <div className="admin-user-identity">
+                    <strong>{displayName || `@${account.username}`}</strong>
+                    {displayName ? <span>@{account.username}</span> : null}
+                    <small>{account.role === 'admin' ? 'أدمن' : 'مستخدم'} · {trackCounts.get(account.id) ?? 0} ملف</small>
+                  </div>
+                  <div className="admin-user-actions">
+                    <span className={`status ${account.status === 'active' ? 'status-published' : 'status-rejected'}`}>
+                      {account.status === 'active' ? 'فعّال' : 'موقوف'}
+                    </span>
+                    {ownAccount ? <span className="admin-self-label">حسابك</span> : (
+                      <form action={`/api/admin/users/${account.id}`} method="post">
+                        {account.status === 'active' ? (
+                          <button className="button button-danger button-small" name="action" value="suspend" type="submit">إيقاف الحساب</button>
+                        ) : (
+                          <button className="button button-dark button-small" name="action" value="activate" type="submit">إعادة التفعيل</button>
+                        )}
+                      </form>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
 
@@ -125,9 +189,7 @@ export default async function AdminPage({
                 {track.description ? <p className="audio-description">{track.description}</p> : null}
                 {track.mediaUrl ? (
                   isVideo ? (
-                    <div style={{ margin: '16px 0', maxWidth: 820 }}>
-                      <VideoPreview src={track.mediaUrl} title={track.title} />
-                    </div>
+                    <div style={{ margin: '16px 0', maxWidth: 820 }}><VideoPreview src={track.mediaUrl} title={track.title} /></div>
                   ) : (
                     <audio controls preload="none" src={track.mediaUrl} />
                   )

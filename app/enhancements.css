@@ -1,0 +1,63 @@
+/* Feature additions: history, resilient uploads, offline details, admin user controls. */
+.recent-page { min-height: calc(100vh - 160px); }
+.recent-heading { align-items: end; }
+.recent-heading p { margin-top: 8px; }
+.recent-local-note { color: #8fa197; font-size: 12px; margin: -4px 0 14px; }
+.recent-list { display: grid; gap: 10px; }
+.recent-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid #173a2a;
+  border-radius: 14px;
+  background: #071a12;
+}
+.recent-row-main { min-width: 0; }
+.recent-row h3 { margin: 0; color: #fff; font-size: 17px; }
+.recent-row p { margin: 5px 0 0; color: #b5c5bb; font-size: 12px; }
+.recent-progress-copy { margin-top: 8px; color: #91a59a; font-size: 11px; }
+.recent-progress { height: 5px; margin-top: 8px; border-radius: 999px; overflow: hidden; background: #10271c; }
+.recent-progress span { display: block; height: 100%; border-radius: inherit; background: #2bd18b; }
+.recent-row-actions { display: flex; gap: 7px; align-items: center; }
+
+.offline-storage-summary { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; color: #9eb1a5; font-size: 11px; }
+.offline-storage-summary span { display: inline-flex; align-items: center; gap: 5px; }
+
+.upload-progress-box {
+  padding: 14px;
+  border: 1px solid #28533e;
+  border-radius: 13px;
+  background: #071a12;
+}
+.upload-progress-copy { display: flex; justify-content: space-between; gap: 12px; color: #dce9e1; font-size: 12px; }
+.upload-progress-copy strong { color: #f4fbf7; font-weight: 700; }
+.upload-progress-track { height: 8px; margin-top: 10px; border-radius: 999px; overflow: hidden; background: #10281c; }
+.upload-progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#0f6b49,#2bd18b); transition: width .18s ease; }
+
+.admin-users-panel { padding: 0 !important; overflow: hidden; }
+.admin-users-list { display: grid; }
+.admin-user-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #173a2a;
+}
+.admin-user-row:last-child { border-bottom: 0; }
+.admin-user-identity { min-width: 0; }
+.admin-user-identity strong { display: block; color: #fff; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.admin-user-identity span { display: block; margin-top: 3px; color: #a9baaf; font-size: 12px; }
+.admin-user-identity small { display: block; margin-top: 5px; color: #7f9488; font-size: 10px; }
+.admin-user-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.admin-self-label { color: #9fe5c0; font-size: 11px; padding: 6px 9px; border-radius: 999px; background: #0b2d20; border: 1px solid #24563e; }
+
+@media (max-width: 700px) {
+  .recent-row { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
+  .recent-row-actions { justify-content: flex-start; }
+  .admin-user-row { grid-template-columns: 1fr; gap: 10px; }
+  .admin-user-actions { justify-content: flex-start; }
+  .upload-progress-copy { align-items: flex-start; }
+}

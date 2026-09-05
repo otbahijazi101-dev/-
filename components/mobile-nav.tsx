@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 type NavItem = {
   href: string;
   label: string;
-  icon: 'home' | 'search' | 'download' | 'heart' | 'list' | 'users' | 'upload' | 'files' | 'account' | 'admin';
+  icon: 'home' | 'recent' | 'search' | 'download' | 'heart' | 'list' | 'users' | 'upload' | 'files' | 'account' | 'admin';
 };
 
 function Icon({ name }: { name: NavItem['icon'] }) {
@@ -23,6 +23,7 @@ function Icon({ name }: { name: NavItem['icon'] }) {
   };
 
   if (name === 'home') return <svg {...common}><path d="M3.5 10.5 12 3l8.5 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></svg>;
+  if (name === 'recent') return <svg {...common}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg>;
   if (name === 'search') return <svg {...common}><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>;
   if (name === 'download') return <svg {...common}><path d="M12 3v11"/><path d="m7.8 10.2 4.2 4.2 4.2-4.2"/><path d="M4 18.5V21h16v-2.5"/></svg>;
   if (name === 'heart') return <svg {...common}><path d="M20.8 5.9c-2.1-2.2-5.5-1.9-7.3.4L12 8.1l-1.5-1.8C8.7 4 5.3 3.7 3.2 5.9 1 8.3 1.4 12 3.8 14.1L12 21l8.2-6.9c2.4-2.1 2.8-5.8.6-8.2Z"/></svg>;
@@ -44,6 +45,7 @@ export function MobileNav({ loggedIn, isAdmin }: { loggedIn: boolean; isAdmin: b
 
   const items: NavItem[] = [
     { href: '/', label: 'المكتبة', icon: 'home' },
+    { href: '/recent', label: 'مؤخرًا', icon: 'recent' },
     { href: '/search', label: 'بحث', icon: 'search' },
     { href: '/offline', label: 'تنزيلاتي', icon: 'download' },
     ...(loggedIn ? [

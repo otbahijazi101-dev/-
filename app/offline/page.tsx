@@ -8,6 +8,7 @@ type OfflineEntry = {
   creator: string;
   mimeType: string;
   savedAt: number;
+  size?: number | null;
 };
 
 const OFFLINE_CACHE = 'radio-offline-media-v1';
@@ -24,10 +25,17 @@ function readEntries(): OfflineEntry[] {
   }
 }
 
+function formatBytes(value?: number | null) {
+  if (!value || value <= 0) return null;
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} كيلوبايت`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} ميجابايت`;
+}
+
 export default function OfflinePage() {
   const [items, setItems] = useState<OfflineEntry[]>([]);
   const [online, setOnline] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [storageUsage, setStorageUsage] = useState<{ usage: number; quota: number } | null>(null);
 
   const refresh = useCallback(() => setItems(readEntries()), []);
 
@@ -40,6 +48,13 @@ export default function OfflinePage() {
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     window.addEventListener('radio-offline-changed', onChanged);
+
+    if (navigator.storage?.estimate) {
+      void navigator.storage.estimate().then((estimate) => {
+        if (estimate.usage != null && estimate.quota != null) setStorageUsage({ usage: estimate.usage, quota: estimate.quota });
+      }).catch(() => undefined);
+    }
+
     return () => {
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
@@ -48,6 +63,7 @@ export default function OfflinePage() {
   }, [refresh]);
 
   const dateFormatter = useMemo(() => new Intl.DateTimeFormat('ar', { dateStyle: 'medium' }), []);
+  const totalDownloaded = useMemo(() => items.reduce((sum, item) => sum + (item.size || 0), 0), [items]);
 
   function play(entry: OfflineEntry) {
     const src = `/offline-media/${encodeURIComponent(entry.id)}`;
@@ -73,6 +89,7 @@ export default function OfflinePage() {
     localStorage.setItem(OFFLINE_KEY, JSON.stringify(next));
     setItems(next);
     setNotice('تم حذف الملف من هذا الجهاز.');
+    window.dispatchEvent(new CustomEvent('radio-offline-changed'));
   }
 
   async function removeAll() {
@@ -81,7 +98,11 @@ export default function OfflinePage() {
     localStorage.removeItem(OFFLINE_KEY);
     setItems([]);
     setNotice('تم حذف كل التنزيلات من هذا الجهاز.');
+    window.dispatchEvent(new CustomEvent('radio-offline-changed'));
   }
+
+  const downloadedLabel = formatBytes(totalDownloaded);
+  const deviceUsage = storageUsage ? `${formatBytes(storageUsage.usage) ?? '—'} من ${formatBytes(storageUsage.quota) ?? '—'}` : null;
 
   return (
     <section className="offline-page">
@@ -91,6 +112,11 @@ export default function OfflinePage() {
             <span className="section-kicker">على هذا الجهاز</span>
             <h1>تنزيلاتي</h1>
             <p>{online ? 'أنت متصل الآن. الملفات أدناه ستظل تعمل عند انقطاع الإنترنت.' : 'أنت الآن بدون إنترنت. الملفات المحفوظة جاهزة للتشغيل.'}</p>
+            <div className="offline-storage-summary">
+              <span>{items.length} ملف محفوظ</span>
+              {downloadedLabel ? <span>التنزيلات: {downloadedLabel}</span> : null}
+              {deviceUsage ? <span>استخدام تخزين التطبيق تقريبًا: {deviceUsage}</span> : null}
+            </div>
           </div>
           {items.length ? <button className="button button-ghost button-small" type="button" onClick={removeAll}>حذف الكل</button> : null}
         </div>
@@ -115,11 +141,11 @@ export default function OfflinePage() {
                 <div className="offline-row-copy">
                   <h2>{entry.title}</h2>
                   <p>{entry.creator}</p>
-                  <small>حُفظ {dateFormatter.format(new Date(entry.savedAt))}</small>
+                  <small>حُفظ {dateFormatter.format(new Date(entry.savedAt))}{entry.size ? ` · ${formatBytes(entry.size)}` : ''}</small>
                 </div>
                 <div className="offline-row-actions">
                   <button className="button button-dark button-small" type="button" onClick={() => play(entry)}>تشغيل</button>
-                  <button className="button button-ghost button-small" type="button" onClick={() => remove(entry)}>حذف</button>
+                  <button className="button button-ghost button-small" type="button" onClick={() => remove(entry)}>حذف من الجهاز</button>
                 </div>
               </article>
             ))}

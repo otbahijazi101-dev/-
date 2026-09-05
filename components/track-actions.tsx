@@ -12,6 +12,7 @@ type OfflineEntry = {
   creator: string;
   mimeType: string;
   savedAt: number;
+  size?: number | null;
 };
 
 const OFFLINE_CACHE = 'radio-offline-media-v1';
@@ -26,6 +27,12 @@ function readOfflineEntries(): OfflineEntry[] {
   } catch {
     return [];
   }
+}
+
+function formatBytes(value?: number | null) {
+  if (!value || value <= 0) return null;
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
 }
 
 export function TrackActions({
@@ -52,6 +59,8 @@ export function TrackActions({
   const [notice, setNotice] = useState<string | null>(null);
   const [savingOffline, setSavingOffline] = useState(false);
   const [savedOffline, setSavedOffline] = useState(false);
+  const [offlineProgress, setOfflineProgress] = useState<number | null>(null);
+  const [offlineSize, setOfflineSize] = useState<number | null>(null);
   const isAudio = Boolean(item.mimeType?.startsWith('audio/'));
 
   useEffect(() => {
@@ -63,7 +72,9 @@ export function TrackActions({
 
   useEffect(() => {
     if (!isAudio) return;
-    setSavedOffline(readOfflineEntries().some((entry) => entry.id === item.id));
+    const saved = readOfflineEntries().find((entry) => entry.id === item.id);
+    setSavedOffline(Boolean(saved));
+    setOfflineSize(saved?.size ?? null);
   }, [isAudio, item.id]);
 
   useEffect(() => {
@@ -155,12 +166,17 @@ export function TrackActions({
 
   async function saveOffline() {
     if (!isAudio || savingOffline) return;
+    if (savedOffline) {
+      setNotice(`هذا الملف محفوظ بالفعل${offlineSize ? ` (${formatBytes(offlineSize)})` : ''}. يمكنك حذفه من «تنزيلاتي».`);
+      return;
+    }
     if (!('caches' in window)) {
       setNotice('الحفظ دون إنترنت غير مدعوم في هذا المتصفح.');
       return;
     }
 
     setSavingOffline(true);
+    setOfflineProgress(0);
     setNotice('جارٍ الحفظ على الجهاز...');
     try {
       const response = await fetch(item.src);
@@ -168,8 +184,26 @@ export function TrackActions({
 
       const cache = await caches.open(OFFLINE_CACHE);
       const cacheKey = new Request(`/offline-media/${encodeURIComponent(item.id)}`);
-      await cache.put(cacheKey, response.clone());
+      const cacheResponse = response.clone();
+      const progressResponse = response.clone();
+      const totalHeader = Number(response.headers.get('content-length') || 0);
+      const cachePromise = cache.put(cacheKey, cacheResponse);
 
+      let bytesDownloaded = 0;
+      if (progressResponse.body) {
+        const reader = progressResponse.body.getReader();
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          bytesDownloaded += value?.byteLength ?? 0;
+          if (totalHeader > 0) setOfflineProgress(Math.min(100, Math.round((bytesDownloaded / totalHeader) * 100)));
+        }
+      } else if (totalHeader > 0) {
+        bytesDownloaded = totalHeader;
+      }
+
+      await cachePromise;
+      const size = bytesDownloaded || totalHeader || null;
       const current = readOfflineEntries().filter((entry) => entry.id !== item.id);
       const next: OfflineEntry[] = [
         {
@@ -178,23 +212,29 @@ export function TrackActions({
           creator: item.creator,
           mimeType: item.mimeType || 'audio/mpeg',
           savedAt: Date.now(),
+          size,
         },
         ...current,
       ];
       localStorage.setItem(OFFLINE_KEY, JSON.stringify(next));
       setSavedOffline(true);
-      setNotice('تم الحفظ. سيعمل من «تنزيلاتي» بدون إنترنت.');
+      setOfflineSize(size);
+      setOfflineProgress(100);
+      setNotice(`تم الحفظ${size ? ` (${formatBytes(size)})` : ''}. سيعمل من «تنزيلاتي» بدون إنترنت.`);
       window.dispatchEvent(new CustomEvent('radio-offline-changed'));
 
-      if (navigator.storage?.persist) {
-        void navigator.storage.persist().catch(() => false);
-      }
+      if (navigator.storage?.persist) void navigator.storage.persist().catch(() => false);
     } catch {
       setNotice('تعذر الحفظ دون إنترنت. حاول مرة أخرى أثناء اتصال جيد.');
     } finally {
       setSavingOffline(false);
+      window.setTimeout(() => setOfflineProgress(null), 1200);
     }
   }
+
+  const offlineButtonLabel = savingOffline
+    ? offlineProgress != null && offlineProgress > 0 ? `جارٍ الحفظ ${offlineProgress}%` : 'جارٍ الحفظ...'
+    : savedOffline ? `محفوظ دون إنترنت${offlineSize ? ` · ${formatBytes(offlineSize)}` : ''}` : 'حفظ دون إنترنت';
 
   if (compact) {
     return (
@@ -207,7 +247,7 @@ export function TrackActions({
             <button type="button" onClick={queue}>إضافة إلى الانتظار</button>
             {isAudio ? (
               <button type="button" onClick={saveOffline} disabled={savingOffline}>
-                {savingOffline ? 'جارٍ الحفظ...' : savedOffline ? 'محفوظ دون إنترنت' : 'حفظ دون إنترنت'}
+                {offlineButtonLabel}
               </button>
             ) : null}
             <button type="button" onClick={toggleLike}>{liked ? 'إلغاء الإعجاب' : 'إعجاب'}</button>
@@ -237,7 +277,7 @@ export function TrackActions({
       <div className="track-actions-row">
         <button className="button button-dark button-small" type="button" onClick={play}>تشغيل</button>
         <button className="button button-ghost button-small" type="button" onClick={queue}>انتظار</button>
-        {isAudio ? <button className="button button-ghost button-small" type="button" onClick={saveOffline}>{savedOffline ? 'دون إنترنت ✓' : 'دون إنترنت'}</button> : null}
+        {isAudio ? <button className="button button-ghost button-small" type="button" onClick={saveOffline} disabled={savingOffline}>{offlineButtonLabel}</button> : null}
         <button className="button button-ghost button-small" type="button" onClick={toggleLike}>{liked ? 'تم الإعجاب' : 'إعجاب'}</button>
         <button className="button button-ghost button-small" type="button" onClick={toggleFavorite}>{favorite ? 'محفوظ' : 'حفظ'}</button>
         {ownerId && ownerId !== userId ? (
