@@ -23,6 +23,30 @@ declare global {
   }
 }
 
+function PlayPauseIcon({ playing }: { playing: boolean }) {
+  if (playing) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+        <path d="M9 6v12M15 6v12" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m9 6 9 6-9 6Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
 export function RadioPlayer() {
   const [current, setCurrent] = useState<RadioItem | null>(null);
   const [queue, setQueue] = useState<RadioItem[]>([]);
@@ -240,6 +264,7 @@ export function RadioPlayer() {
   if (!current) return null;
 
   const hasNext = Boolean(queue.length || automaticNext);
+  const primaryLabel = playing ? 'إيقاف مؤقت' : 'تشغيل';
 
   return (
     <aside className="radio-player-shell" aria-label="مشغل الراديو">
@@ -275,8 +300,14 @@ export function RadioPlayer() {
             onEnded={next}
           />
         )}
-        <button className="player-text-button player-primary-control" type="button" onClick={togglePlay}>
-          {playing ? 'إيقاف' : 'تشغيل'}
+        <button
+          className="player-icon-button player-primary-control"
+          type="button"
+          onClick={togglePlay}
+          aria-label={primaryLabel}
+          title={primaryLabel}
+        >
+          <PlayPauseIcon playing={playing} />
         </button>
         {playing ? (
           <button className="player-wave" type="button" onClick={seek} aria-label="الانتقال داخل الملف">
@@ -288,7 +319,15 @@ export function RadioPlayer() {
         <button className="player-text-button" type="button" onClick={next} disabled={!hasNext}>
           التالي{queue.length ? ` (${queue.length})` : ''}
         </button>
-        <button className="player-text-button player-close" type="button" onClick={closePlayer}>إغلاق</button>
+        <button
+          className="player-icon-button player-close"
+          type="button"
+          onClick={closePlayer}
+          aria-label="إغلاق المشغل"
+          title="إغلاق المشغل"
+        >
+          <CloseIcon />
+        </button>
       </div>
     </aside>
   );

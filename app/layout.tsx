@@ -11,6 +11,7 @@ import './review.css';
 import './enhancements.css';
 import './track-tap.css';
 import './soundcloud.css';
+import './mobile-polish.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { TrackTapController } from '@/components/track-tap-controller';
