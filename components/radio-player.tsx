@@ -243,7 +243,10 @@ export function RadioPlayer() {
 
   return (
     <aside className="radio-player-shell" aria-label="مشغل الراديو">
-      <div className="radio-player-inner container">
+      <div
+        className="radio-player-inner container"
+        style={!playing ? { minHeight: '64px', gridTemplateRows: 'auto' } : undefined}
+      >
         <div className="radio-player-title">
           <strong>{current.title}</strong>
           <span>{current.creator}</span>
@@ -275,11 +278,13 @@ export function RadioPlayer() {
         <button className="player-text-button player-primary-control" type="button" onClick={togglePlay}>
           {playing ? 'إيقاف' : 'تشغيل'}
         </button>
-        <button className="player-wave" type="button" onClick={seek} aria-label="الانتقال داخل الملف">
-          {bars.map((height, index) => (
-            <span key={index} className={index / bars.length <= progress ? 'played' : ''} style={{ height: `${height}%` }} />
-          ))}
-        </button>
+        {playing ? (
+          <button className="player-wave" type="button" onClick={seek} aria-label="الانتقال داخل الملف">
+            {bars.map((height, index) => (
+              <span key={index} className={index / bars.length <= progress ? 'played' : ''} style={{ height: `${height}%` }} />
+            ))}
+          </button>
+        ) : null}
         <button className="player-text-button" type="button" onClick={next} disabled={!hasNext}>
           التالي{queue.length ? ` (${queue.length})` : ''}
         </button>
