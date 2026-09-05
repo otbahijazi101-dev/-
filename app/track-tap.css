@@ -1,0 +1,59 @@
+/* Tap a media card to toggle playback; compact controls use clear icon buttons. */
+.media-list-card.is-track-clickable {
+  cursor: pointer;
+}
+
+.media-list-card.is-track-clickable:active {
+  transform: translateY(1px);
+}
+
+.media-inline-play {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
+  border: 1px solid #2a8b65 !important;
+  background: #0f6b49 !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.2);
+}
+
+.media-inline-play:hover {
+  background: #14875b !important;
+}
+
+.media-inline-play svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.media-list-card.is-track-playing .media-inline-play {
+  background: #1b8f63 !important;
+  border-color: #3aae80 !important;
+}
+
+.media-list-card.is-track-playing .media-inline-play svg {
+  display: none;
+}
+
+.media-list-card.is-track-playing .media-inline-play::before {
+  content: '';
+  width: 12px;
+  height: 14px;
+  display: block;
+  background: linear-gradient(to right, currentColor 0 4px, rgba(0,0,0,0) 4px 8px, currentColor 8px 12px);
+}
+
+@media (max-width: 700px) {
+  .media-inline-play {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+}

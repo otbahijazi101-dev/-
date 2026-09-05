@@ -35,6 +35,14 @@ function formatBytes(value?: number | null) {
   return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
 }
 
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m9 6 9 6-9 6Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function TrackActions({
   item,
   userId,
@@ -239,7 +247,7 @@ export function TrackActions({
   if (compact) {
     return (
       <div className="media-compact-controls">
-        <button className="media-inline-play" type="button" onClick={play}>تشغيل</button>
+        <button className="media-inline-play" type="button" onClick={play} aria-label="تشغيل" title="تشغيل"><PlayIcon /></button>
         <details className="media-actions-compact">
           <summary aria-label="خيارات المقطع">•••</summary>
           <div className="media-action-popover">

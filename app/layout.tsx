@@ -9,8 +9,10 @@ import './final.css';
 import './mobile-nav.css';
 import './review.css';
 import './enhancements.css';
+import './track-tap.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
+import { TrackTapController } from '@/components/track-tap-controller';
 import { PwaRegister } from '@/components/pwa-register';
 import { getSiteName } from '@/lib/site-settings';
 
@@ -51,6 +53,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="ar" dir="rtl">
       <body>
         <PwaRegister />
+        <TrackTapController />
         <SiteHeader />
         <main>{children}</main>
         <footer className="site-footer">
