@@ -30,6 +30,7 @@ export default async function LoginPage({
           <button className="button button-dark button-wide" type="submit">دخول</button>
         </form>
         <p className="auth-switch">ليس لديك حساب؟ <Link href="/register">أنشئ حسابًا</Link></p>
+        <p className="auth-switch">نسيت كلمة المرور؟ يمكنك <Link href="/register">إنشاء حساب جديد</Link>. ستبقى ملفات الحساب السابق فيه.</p>
       </div>
     </section>
   );

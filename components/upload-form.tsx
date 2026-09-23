@@ -133,7 +133,18 @@ async function analyzeVideo(file: File) {
   });
 }
 
-export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
+type EditingTrack = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  tags: string[] | null;
+  storage_path: string;
+  cover_path: string | null;
+  mime_type: string | null;
+};
+
+export function UploadForm({ userId, isAdmin, editing }: { userId: string; isAdmin: boolean; editing?: EditingTrack }) {
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -257,66 +268,83 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
 
     if (title.length < 2 || title.length > 120) return setError('العنوان يجب أن يكون بين حرفين و120 حرفًا.');
     if (description.length > 2000) return setError('الوصف طويل جدًا.');
-    if (!(file instanceof File) || file.size === 0) return setError('اختر ملفًا صوتيًا أو فيديو.');
-    if (!supportedMimeTypes.has(file.type)) return setError('نوع الملف غير مدعوم. استخدم ملفًا صوتيًا أو MP4 أو WebM أو MOV.');
-    if (file.size > MAX_FILE_SIZE) return setError('حجم الملف يجب ألا يتجاوز 50 ميجابايت.');
+    const mediaFile = file instanceof File && file.size > 0 ? file : null;
+    if (!editing && !mediaFile) return setError('اختر ملفًا صوتيًا أو فيديو.');
+    if (mediaFile && !supportedMimeTypes.has(mediaFile.type)) return setError('نوع الملف غير مدعوم. استخدم ملفًا صوتيًا أو MP4 أو WebM أو MOV.');
+    if (mediaFile && mediaFile.size > MAX_FILE_SIZE) return setError('حجم الملف يجب ألا يتجاوز 50 ميجابايت.');
     if (coverInput instanceof File && coverInput.size > 0 && (!coverTypes.has(coverInput.type) || coverInput.size > MAX_COVER_SIZE)) {
       return setError('الغلاف يجب أن يكون JPG أو PNG أو WebP وأقل من 5 ميجابايت.');
     }
 
     setBusy(true);
     try {
-      const isVideo = file.type.startsWith('video/');
-      const mediaAnalysis = isVideo ? await analyzeVideo(file) : await analyzeAudio(file);
-      const generatedThumbnail = isVideo && 'thumbnail' in mediaAnalysis ? mediaAnalysis.thumbnail : null;
-      const waveform = !isVideo && 'waveform' in mediaAnalysis ? mediaAnalysis.waveform : null;
-      const duration = mediaAnalysis.duration;
+      const isVideo = mediaFile ? mediaFile.type.startsWith('video/') : Boolean(editing?.mime_type?.startsWith('video/'));
+      const mediaAnalysis = mediaFile ? (isVideo ? await analyzeVideo(mediaFile) : await analyzeAudio(mediaFile)) : null;
+      const generatedThumbnail = mediaAnalysis && isVideo && 'thumbnail' in mediaAnalysis ? mediaAnalysis.thumbnail : null;
+      const waveform = mediaAnalysis && !isVideo && 'waveform' in mediaAnalysis ? mediaAnalysis.waveform : null;
+      const duration = mediaAnalysis?.duration ?? null;
 
-      const extension = extensionByMime[file.type] ?? 'media';
-      const storagePath = getOrCreateStoragePath(userId, file, extension);
-      await uploadResumable(file, storagePath);
+      const extension = mediaFile ? extensionByMime[mediaFile.type] ?? 'media' : '';
+      const storagePath = mediaFile ? getOrCreateStoragePath(userId, mediaFile, extension) : editing!.storage_path;
+      if (mediaFile) await uploadResumable(mediaFile, storagePath);
 
-      let coverPath: string | null = null;
+      let coverPath: string | null = editing?.cover_path ?? null;
+      let uploadedCoverPath: string | null = null;
       const coverBlob: File | Blob | null = coverInput instanceof File && coverInput.size > 0 ? coverInput : generatedThumbnail;
       if (coverBlob) {
         setUploadStatus('تم رفع الملف. جارٍ رفع الغلاف...');
         const coverExt = coverBlob.type === 'image/png' ? 'png' : coverBlob.type === 'image/webp' ? 'webp' : 'jpg';
-        coverPath = `${userId}/${crypto.randomUUID()}.${coverExt}`;
-        const { error: coverError } = await supabase.storage.from('covers').upload(coverPath, coverBlob, {
+        uploadedCoverPath = `${userId}/${crypto.randomUUID()}.${coverExt}`;
+        const { error: coverError } = await supabase.storage.from('covers').upload(uploadedCoverPath, coverBlob, {
           cacheControl: '3600', contentType: coverBlob.type || 'image/jpeg', upsert: false,
         });
-        if (coverError) coverPath = null;
+        if (!coverError) coverPath = uploadedCoverPath;
       }
 
       const now = new Date().toISOString();
       setUploadStatus('جارٍ تسجيل المحتوى...');
-      const { error: insertError } = await supabase.from('tracks').insert({
-        owner_id: userId,
+      const values = {
         title,
-        slug: slugify(title),
         description: description || null,
         category: category || null,
         tags,
         cover_path: coverPath,
-        duration_seconds: duration,
-        waveform,
-        storage_path: storagePath,
-        mime_type: file.type,
-        file_size: file.size,
+        ...(mediaFile ? {
+          duration_seconds: duration,
+          waveform,
+          storage_path: storagePath,
+          mime_type: mediaFile.type,
+          file_size: mediaFile.size,
+        } : {}),
         status: isAdmin ? 'published' : 'pending',
         published_at: isAdmin ? now : null,
-      });
+        ...(editing ? { rejection_reason: null, updated_at: now } : {}),
+      };
+      const result = editing
+        ? await supabase.from('tracks').update(values).eq('id', editing.id).eq('owner_id', userId).select('id').single()
+        : await supabase.from('tracks').insert({ ...values, owner_id: userId, slug: slugify(title) });
 
-      if (insertError) {
-        await supabase.storage.from('audio').remove([storagePath]);
-        if (coverPath) await supabase.storage.from('covers').remove([coverPath]);
-        throw new Error('track_insert_failed');
+      if (result.error) {
+        if (mediaFile) await supabase.storage.from('audio').remove([storagePath]);
+        if (uploadedCoverPath) await supabase.storage.from('covers').remove([uploadedCoverPath]);
+        throw new Error('track_save_failed');
       }
 
-      clearResumeState(userId, file);
-      window.location.href = '/my-tracks?uploaded=1';
+      if (editing && (mediaFile || coverPath !== editing.cover_path)) {
+        await fetch('/api/tracks/cleanup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trackId: editing.id,
+            audioPath: mediaFile ? editing.storage_path : null,
+            coverPath: coverPath !== editing.cover_path ? editing.cover_path : null,
+          }),
+        }).catch(() => { /* Metadata was saved; cleanup is best effort. */ });
+      }
+      if (mediaFile) clearResumeState(userId, mediaFile);
+      window.location.href = editing ? '/my-tracks?edited=1' : '/my-tracks?uploaded=1';
     } catch {
-      setError('تعذر إكمال الرفع. إذا انقطع الاتصال، اختر نفس الملف مرة أخرى وسيحاول الراديو استكمال الرفع السابق بدل البدء من الصفر.');
+      setError('تعذر حفظ الملف. إذا انقطع الاتصال أثناء الرفع، اختر الملف نفسه مرة أخرى لاستكماله.');
       setUploadStatus('توقف الرفع مؤقتًا. يمكنك المحاولة مرة أخرى بنفس الملف.');
       setBusy(false);
     }
@@ -325,19 +353,30 @@ export function UploadForm({ userId, isAdmin }: { userId: string; isAdmin: boole
   return (
     <form className="stack-form" onSubmit={handleSubmit}>
       {error ? <div className="form-alert">{error}</div> : null}
-      <label><span>عنوان الملف</span><input name="title" required minLength={2} maxLength={120} placeholder="اكتب عنوانًا واضحًا" /></label>
-      <label><span>التصنيف</span><select name="category" defaultValue=""><option value="">بدون تصنيف</option><option>بودكاست</option><option>قصة</option><option>تاريخ</option><option>ثقافة</option><option>وثائقي</option><option>إنشاد</option><option>فيديو</option><option>أخرى</option></select></label>
-      <label><span>الوسوم</span><input name="tags" maxLength={240} placeholder="مثال: تربية، قصة، تاريخ" /><small>افصل بين الوسوم بفاصلة.</small></label>
-      <label><span>الوصف</span><textarea name="description" maxLength={2000} placeholder="نبذة قصيرة عن هذا المحتوى" /></label>
-      <label><span>الغلاف - اختياري</span><input name="cover" type="file" accept="image/jpeg,image/png,image/webp" /><small>إذا كان الملف فيديو ولم ترفع غلافًا، سنحاول استخراج صورة معاينة تلقائيًا.</small></label>
-      <label><span>الملف الصوتي أو الفيديو</span><input name="media" type="file" accept="audio/*,video/mp4,video/webm,video/quicktime" required /><small>الحد الحالي 50 ميجابايت. الرفع مجزأ وقابل للاستكمال عند ضعف الاتصال؛ إذا توقف اختر نفس الملف مرة أخرى.</small></label>
+      <label><span>العنوان</span><input name="title" defaultValue={editing?.title} required minLength={2} maxLength={120} placeholder="ما اسم هذا الملف؟" /></label>
+      <label>
+        <span>{editing ? 'تغيير الملف الصوتي أو الفيديو (اختياري)' : 'الملف الصوتي أو الفيديو'}</span>
+        <input name="media" type="file" accept="audio/*,video/mp4,video/webm,video/quicktime" required={!editing} />
+        <small>{editing ? 'اتركه فارغًا للاحتفاظ بالملف الحالي. ' : ''}الحد الأقصى 50 ميجابايت.</small>
+      </label>
+      <details>
+        <summary>تفاصيل إضافية (اختيارية)</summary>
+        <div className="stack-form">
+          <label><span>التصنيف</span><select name="category" defaultValue={editing?.category ?? ''}><option value="">بدون تصنيف</option><option>بودكاست</option><option>قصة</option><option>تاريخ</option><option>ثقافة</option><option>وثائقي</option><option>إنشاد</option><option>فيديو</option><option>أخرى</option></select></label>
+          <label><span>الوسوم</span><input name="tags" defaultValue={editing?.tags?.join('، ') ?? ''} maxLength={240} placeholder="مثال: قصة، تاريخ" /></label>
+          <label><span>الوصف</span><textarea name="description" defaultValue={editing?.description ?? ''} maxLength={2000} placeholder="نبذة قصيرة عن المحتوى" /></label>
+          <label><span>الغلاف</span><input name="cover" type="file" accept="image/jpeg,image/png,image/webp" /><small>{editing ? 'اتركه فارغًا للاحتفاظ بالغلاف الحالي.' : 'يمكنك تركه فارغًا.'}</small></label>
+        </div>
+      </details>
       {busy || uploadStatus ? (
         <div className="upload-progress-box" aria-live="polite">
           <div className="upload-progress-copy"><strong>{uploadStatus || 'جاري الرفع...'}</strong><span>{uploadProgress}%</span></div>
           <div className="upload-progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}><span style={{ width: `${uploadProgress}%` }} /></div>
         </div>
       ) : null}
-      <button className="button button-dark button-wide" type="submit" disabled={busy}>{busy ? 'جاري الرفع...' : isAdmin ? 'ارفع وانشر مباشرة' : 'ارفع للمراجعة'}</button>
+      <button className="button button-dark button-wide" type="submit" disabled={busy}>
+        {busy ? 'جاري الحفظ...' : editing ? 'حفظ التعديل' : isAdmin ? 'ارفع وانشر مباشرة' : 'ارفع للمراجعة'}
+      </button>
     </form>
   );
 }

@@ -17,11 +17,11 @@ const statusText: Record<string, string> = {
 export default async function MyTracksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ uploaded?: string; deleted?: string; delete?: string }>;
+  searchParams: Promise<{ uploaded?: string; edited?: string; deleted?: string; delete?: string }>;
 }) {
   if (!isSupabaseConfigured) redirect('/login');
 
-  const { uploaded, deleted, delete: deleteState } = await searchParams;
+  const { uploaded, edited, deleted, delete: deleteState } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -46,6 +46,7 @@ export default async function MyTracksPage({
         </div>
 
         {uploaded ? <div className="form-alert form-success">تم رفع الملف بنجاح.</div> : null}
+        {edited ? <div className="form-alert form-success">تم حفظ التعديل. تظهر حالة الملف الحالية أدناه.</div> : null}
         {deleted ? <div className="form-alert form-success">تم حذف الملف نهائيًا.</div> : null}
         {deleteState === 'error' ? <div className="form-alert">تعذر حذف الملف. حاول مرة أخرى.</div> : null}
 
@@ -75,6 +76,7 @@ export default async function MyTracksPage({
                     </div>
                     <div className="track-row-actions">
                       <span className={`status status-${track.status}`}>{statusText[track.status] ?? track.status}</span>
+                      <Link className="button button-ghost" href={`/my-tracks/${track.id}/edit`}>تعديل</Link>
                       <DeleteTrackForm trackId={track.id} title={track.title} />
                     </div>
                   </div>
