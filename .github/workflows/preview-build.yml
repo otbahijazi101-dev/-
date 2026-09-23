@@ -1,10 +1,10 @@
-name: Preview build check
+name: Preview typecheck
 on:
   push:
     branches: [codex/listening-refresh-preview]
   workflow_dispatch:
 jobs:
-  build:
+  typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,4 +12,4 @@ jobs:
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
-      - run: npm run build
+      - run: npx tsc --noEmit

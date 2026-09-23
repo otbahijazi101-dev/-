@@ -95,8 +95,11 @@ export function TrackActions({
   const isAudio = Boolean(item.mimeType?.startsWith('audio/'));
 
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('radio-register', { detail: item }));
+    const register = () => window.dispatchEvent(new CustomEvent('radio-register', { detail: item }));
+    window.addEventListener('radio-library-request', register);
+    register();
     return () => {
+      window.removeEventListener('radio-library-request', register);
       window.dispatchEvent(new CustomEvent('radio-unregister', { detail: { id: item.id } }));
     };
   }, [item]);
