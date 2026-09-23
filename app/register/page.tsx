@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getSiteName } from '@/lib/site-settings';
 
 export const metadata: Metadata = { title: 'إنشاء حساب' };
 
@@ -19,11 +20,12 @@ export default async function RegisterPage({
   }
 
   const { error } = await searchParams;
+  const siteName = await getSiteName();
 
   return (
     <section className="auth-section">
       <div className="auth-card auth-card-wide">
-        <span className="eyebrow eyebrow-dark">انضم إلى راديو</span>
+        <span className="eyebrow eyebrow-dark">انضم إلى {siteName}</span>
         <h1>أنشئ حسابك</h1>
         <p className="form-intro">لن نطلب بريدًا إلكترونيًا. ستدخل دائمًا باسم المستخدم الذي تختاره.</p>
         {error ? <div className="form-alert">{error}</div> : null}

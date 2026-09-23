@@ -41,7 +41,7 @@ export async function GET(
       src: media.signedUrl,
       mimeType: track.mime_type,
       coverUrl: cover.data?.signedUrl ?? null,
-      href: `/#track-${track.id}`,
+      href: `/track/${track.id}`,
     },
   });
 }

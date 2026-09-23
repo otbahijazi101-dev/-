@@ -1,12 +1,13 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { PwaInstallButton } from '@/components/pwa-install-button';
 import { MobileNav } from '@/components/mobile-nav';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
-import { getSiteName } from '@/lib/site-settings';
+import { getSiteLogoUrl, getSiteName } from '@/lib/site-settings';
 
 export async function SiteHeader() {
-  const siteName = await getSiteName();
+  const [siteName, logoUrl] = await Promise.all([getSiteName(), getSiteLogoUrl()]);
   let username: string | null = null;
   let isAdmin = false;
 
@@ -30,11 +31,15 @@ export async function SiteHeader() {
     <>
       <header className="site-header">
         <div className="container header-inner">
-          <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}><span className="brand-name">{siteName}</span></Link>
+          <Link href="/" className="brand" aria-label={`${siteName} - الرئيسية`}>
+            {logoUrl ? <Image className="brand-logo" src={logoUrl} alt="" width={38} height={38} unoptimized /> : null}
+            <span className="brand-name">{siteName}</span>
+          </Link>
           <nav className="main-nav" aria-label="التنقل الرئيسي">
             <Link href="/">المكتبة</Link>
             <Link href="/recent">مؤخرًا</Link>
             <Link href="/search">بحث</Link>
+            <Link href="/community-playlists">قوائم المجتمع</Link>
             <Link href="/offline">تنزيلاتي</Link>
             {username ? <Link href="/following">أتابعهم</Link> : null}
             {username ? <Link href="/favorites">المحفوظات</Link> : null}
@@ -43,7 +48,7 @@ export async function SiteHeader() {
             {username ? <Link href="/my-tracks">ملفاتي</Link> : null}
             {isAdmin ? <Link href="/admin">الإدارة</Link> : null}
           </nav>
-          <form className="header-search" action="/search"><input name="q" placeholder="ابحث في الراديو" aria-label="بحث" /></form>
+          <form className="header-search" action="/search"><input name="q" placeholder="ابحث في المكتبة" aria-label="بحث" /></form>
           <div className="header-actions">
             <PwaInstallButton />
             {username ? (

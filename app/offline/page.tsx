@@ -111,7 +111,7 @@ export default function OfflinePage() {
           <div>
             <span className="section-kicker">على هذا الجهاز</span>
             <h1>تنزيلاتي</h1>
-            <p>{online ? 'أنت متصل الآن. الملفات أدناه ستظل تعمل عند انقطاع الإنترنت.' : 'أنت الآن بدون إنترنت. الملفات المحفوظة جاهزة للتشغيل.'}</p>
+            <p>{online ? 'أنت متصل الآن. الملفات المحفوظة على هذا الجهاز متاحة دون إنترنت ما دامت محفوظة في المتصفح.' : 'أنت الآن بدون إنترنت. الملفات التي ما زالت محفوظة على هذا الجهاز جاهزة للتشغيل.'}</p>
             <div className="offline-storage-summary">
               <span>{items.length} ملف محفوظ</span>
               {downloadedLabel ? <span>التنزيلات: {downloadedLabel}</span> : null}
@@ -122,7 +122,7 @@ export default function OfflinePage() {
         </div>
 
         <div className="offline-install-note">
-          <strong>تثبيت الراديو</strong>
+          <strong>تثبيت الموقع</strong>
           <p>على Android استخدم زر «تثبيت» عندما يظهر. وعلى iPhone أو iPad: مشاركة ← إضافة إلى الشاشة الرئيسية.</p>
         </div>
 

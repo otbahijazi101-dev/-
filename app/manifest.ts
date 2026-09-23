@@ -1,9 +1,13 @@
 import type { MetadataRoute } from 'next';
+import { getSiteName } from '@/lib/site-settings';
 
-export default function manifest(): MetadataRoute.Manifest {
+export const dynamic = 'force-dynamic';
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const siteName = await getSiteName();
   return {
-    name: 'راديو',
-    short_name: 'راديو',
+    name: siteName,
+    short_name: siteName.slice(0, 12),
     description: 'استمع وشاهد واحفظ الصوت للاستماع دون إنترنت.',
     start_url: '/',
     scope: '/',

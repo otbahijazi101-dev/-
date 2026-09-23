@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { VideoPreview } from '@/components/video-preview';
-import { getSiteName } from '@/lib/site-settings';
+import { getSiteLogoUrl, getSiteName } from '@/lib/site-settings';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
@@ -40,11 +41,11 @@ function creatorLabel(owner: AdminTrack['owner']) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ settings?: string; action?: string; userAction?: string }>;
+  searchParams: Promise<{ settings?: string; logo?: string; action?: string; userAction?: string }>;
 }) {
   if (!isSupabaseConfigured) redirect('/login');
 
-  const { settings, action, userAction } = await searchParams;
+  const { settings, logo, action, userAction } = await searchParams;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -57,7 +58,7 @@ export default async function AdminPage({
 
   if (profile?.role !== 'admin' || profile?.status !== 'active') redirect('/');
 
-  const siteName = await getSiteName();
+  const [siteName, logoUrl] = await Promise.all([getSiteName(), getSiteLogoUrl()]);
 
   const [{ data: pendingData }, { data: usersData }, { data: ownerRows }] = await Promise.all([
     supabase
@@ -110,7 +111,7 @@ export default async function AdminPage({
             <div className="admin-card-top">
               <div>
                 <h3>اسم المنصة</h3>
-                <p className="creator-name">غيّر الاسم هنا وسيظهر تلقائيًا في واجهة الراديو وعنوان المتصفح.</p>
+                <p className="creator-name">الاسم والشعار يظهران للزوار في واجهة الموقع.</p>
               </div>
             </div>
 
@@ -120,12 +121,35 @@ export default async function AdminPage({
 
             <form className="stack-form settings-form" action="/api/admin/settings" method="post">
               <label>
-                اسم الراديو
+                اسم الموقع
                 <input name="site_name" defaultValue={siteName} maxLength={80} required />
                 <small>الاسم الحالي: {siteName}</small>
               </label>
               <div><button className="button button-dark button-small" type="submit">حفظ الاسم</button></div>
             </form>
+
+            <div className="admin-branding-divider" />
+            <div className="admin-card-top">
+              <div><h3>شعار الموقع</h3><p className="creator-name">ارفع صورة PNG أو JPG أو WebP بحجم لا يتجاوز 2 ميجابايت. الصورة المربعة أو الشفافة تبدو أفضل.</p></div>
+            </div>
+            {logo === 'saved' ? <div className="form-alert form-success">تم تغيير الشعار.</div> : null}
+            {logo === 'removed' ? <div className="form-alert form-success">تمت إزالة الشعار.</div> : null}
+            {logo === 'invalid' ? <div className="form-alert">اختر صورة PNG أو JPG أو WebP بحجم لا يتجاوز 2 ميجابايت.</div> : null}
+            {logo === 'error' ? <div className="form-alert">تعذر حفظ الشعار. تأكد من تطبيق تحديث قاعدة البيانات ثم حاول مرة أخرى.</div> : null}
+            <div className="admin-logo-preview">
+              {logoUrl ? <Image src={logoUrl} alt="شعار الموقع الحالي" width={80} height={80} unoptimized /> : <span aria-hidden="true">{siteName.trim().slice(0, 2)}</span>}
+              <small>{logoUrl ? 'الشعار الحالي' : 'يظهر اسم الموقع حتى ترفع شعارًا'}</small>
+            </div>
+            <form className="stack-form settings-form" action="/api/admin/logo" method="post" encType="multipart/form-data">
+              <label>صورة الشعار<input name="logo" type="file" accept="image/png,image/jpeg,image/webp" required /></label>
+              <div><button className="button button-dark button-small" type="submit">حفظ الشعار</button></div>
+            </form>
+            {logoUrl ? (
+              <form action="/api/admin/logo" method="post" className="admin-remove-logo">
+                <input type="hidden" name="action" value="remove" />
+                <button className="button button-ghost button-small" type="submit">إزالة الشعار</button>
+              </form>
+            ) : null}
           </div>
         </div>
 

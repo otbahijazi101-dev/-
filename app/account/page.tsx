@@ -35,6 +35,7 @@ export default async function AccountPage({
     last_admin: 'لا يمكن حذف آخر حساب أدمن فعّال. أنشئ أدمن آخر أولًا.',
     forbidden: 'هذا الإجراء غير متاح لهذا الحساب.',
     update_failed: 'تعذر حفظ التعديل. حاول مرة أخرى.',
+    delete_partial: 'بدأ حذف الملفات لكن تعذر إكمال حذف الحساب. حسابك ما زال موجودًا؛ حاول الحذف مرة أخرى.',
   };
 
   return (
@@ -85,31 +86,29 @@ export default async function AccountPage({
               <p className="creator-handle">@{profile.username}</p>
             </div>
 
-            {isAdmin ? (
-              <div className="account-admin-forms">
-                <form className="stack-form account-form" action="/api/account/settings" method="post">
-                  <input type="hidden" name="action" value="display_name" />
-                  <label>
-                    اسم العرض
-                    <input name="display_name" defaultValue={profile.display_name ?? ''} maxLength={60} placeholder="الاسم الذي يظهر للناس" />
-                    <small>يمكن للأدمن تغيير الاسم الظاهر بجوار منشوراته.</small>
-                  </label>
-                  <div><button className="button button-ghost" type="submit">حفظ اسم العرض</button></div>
-                </form>
+            <div className="account-admin-forms">
+              <form className="stack-form account-form" action="/api/account/settings" method="post">
+                <input type="hidden" name="action" value="display_name" />
+                <label>
+                  اسم العرض
+                  <input name="display_name" defaultValue={profile.display_name ?? ''} maxLength={60} placeholder="الاسم الذي يظهر للناس" />
+                  <small>هذا الاسم يظهر بجوار ملفاتك المنشورة.</small>
+                </label>
+                <div><button className="button button-ghost" type="submit">حفظ اسم العرض</button></div>
+              </form>
 
+              {isAdmin ? (
                 <form className="stack-form account-form account-form-separated" action="/api/account/settings" method="post">
                   <input type="hidden" name="action" value="username" />
                   <label>
                     اسم الحساب
                     <input name="username" defaultValue={profile.username} minLength={3} maxLength={30} required />
-                    <small>يظهر كـ @{profile.username} ويُستخدم عند تسجيل الدخول.</small>
+                    <small>يظهر كـ @{profile.username}؛ استخدم الاسم الجديد عند تسجيل الدخول لاحقًا.</small>
                   </label>
                   <div><button className="button button-ghost" type="submit">تغيير اسم الحساب</button></div>
                 </form>
-              </div>
-            ) : (
-              <div className="account-readonly-note">اسم الحساب واسم العرض ثابتان للمستخدمين العاديين. يمكنك تغيير كلمة المرور فقط.</div>
-            )}
+              ) : <small>اسم المستخدم هو اسم الدخول؛ يمكنك تغيير اسم العرض الذي يراه الناس.</small>}
+            </div>
           </article>
         </div>
 

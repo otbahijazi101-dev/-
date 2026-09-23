@@ -21,3 +21,21 @@ export const getSiteName = cache(async () => {
     return DEFAULT_SITE_NAME;
   }
 });
+
+export const getSiteLogoUrl = cache(async () => {
+  if (!isSupabaseConfigured) return null;
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('logo_path')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (error || !data?.logo_path?.startsWith('logos/')) return null;
+    return supabase.storage.from('branding').getPublicUrl(data.logo_path).data.publicUrl;
+  } catch {
+    return null;
+  }
+});

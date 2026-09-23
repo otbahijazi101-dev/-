@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profile?.role !== 'admin' || profile?.status !== 'active') {
+  if (!profile || profile.status !== 'active') {
     return accountRedirect(request, { error: 'forbidden' });
   }
   if (!isSupabaseAdminConfigured) return accountRedirect(request, { error: 'update_failed' });
@@ -71,6 +71,7 @@ export async function POST(request: Request) {
   }
 
   if (action === 'username') {
+    if (profile.role !== 'admin') return accountRedirect(request, { error: 'forbidden' });
     const usernameResult = validateUsername(String(formData.get('username') ?? ''));
     if (!usernameResult.ok) return accountRedirect(request, { error: 'username_invalid' });
 
