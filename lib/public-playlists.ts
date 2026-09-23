@@ -33,7 +33,7 @@ export async function playablePlaylist(
   supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
   playlist: PublicPlaylist,
 ): Promise<RadioItem[]> {
-  return (await Promise.all(publishedItems(playlist).map(async ({ track }) => {
+  return (await Promise.all(publishedItems(playlist).map(async ({ track }): Promise<RadioItem | null> => {
     const [{ data: media }, cover] = await Promise.all([
       supabase.storage.from('audio').createSignedUrl(track.storage_path, 3600),
       track.cover_path ? supabase.storage.from('covers').createSignedUrl(track.cover_path, 3600) : Promise.resolve({ data: null }),
