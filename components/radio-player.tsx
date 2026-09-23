@@ -52,21 +52,61 @@ export function RadioPlayer() {
   const [queue, setQueue] = useState<RadioItem[]>([]);
   const [library, setLibrary] = useState<RadioItem[]>([]);
   const [playing, setPlaying] = useState(false);
+  const [playError, setPlayError] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastHistoryWrite = useRef(0);
+  const playRequest = useRef(0);
 
   const isVideo = Boolean(current?.mimeType?.startsWith('video/'));
   const activeMedia = useCallback(() => (isVideo ? videoRef.current : audioRef.current), [isVideo]);
 
+  // Keep the audio element mounted before the first tap. iOS requires the first
+  // play() call to happen in the same user gesture, not in an effect or timer.
+  const startAudio = useCallback((item: RadioItem) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const request = ++playRequest.current;
+    if (audio.getAttribute('src') !== item.src) {
+      audio.src = item.src;
+      audio.load();
+    }
+    const startAt = Math.max(0, item.startAt || 0);
+    if (startAt) {
+      const seek = () => {
+        try { audio.currentTime = Math.min(startAt, Math.max(0, audio.duration - 0.25)); } catch { /* wait for metadata */ }
+      };
+      if (audio.readyState >= 1) seek();
+      else audio.addEventListener('loadedmetadata', seek, { once: true });
+    } else {
+      try { audio.currentTime = 0; } catch { /* wait for metadata */ }
+    }
+    setPlayError(false);
+    void audio.play().then(() => {
+      if (playRequest.current === request) setPlaying(true);
+    }).catch(() => {
+      if (playRequest.current !== request) return;
+      setPlaying(false);
+      setPlayError(true);
+    });
+  }, []);
+
   useEffect(() => {
     const onPlay = (event: WindowEventMap['radio-play']) => {
       const startAt = event.detail.startAt ?? savedPositionFor(event.detail.id);
-      setCurrent({ ...event.detail, startAt });
+      const item = { ...event.detail, startAt };
+      if (!item.mimeType?.startsWith('video/')) {
+        videoRef.current?.pause();
+        startAudio(item);
+      } else {
+        playRequest.current++;
+        audioRef.current?.pause();
+        setPlayError(false);
+      }
+      setCurrent(item);
       setProgress(0);
-      setPlaying(true);
     };
     const onQueue = (event: WindowEventMap['radio-queue']) => {
       setQueue((items) => items.some((item) => item.id === event.detail.id) ? items : [...items, event.detail]);
@@ -94,10 +134,10 @@ export function RadioPlayer() {
       window.removeEventListener('radio-register', onRegister);
       window.removeEventListener('radio-unregister', onUnregister);
     };
-  }, []);
+  }, [startAudio]);
 
   useEffect(() => {
-    if (!current) return;
+    if (!current || !isVideo) return;
     const timer = window.setTimeout(() => {
       const media = activeMedia();
       if (!media) return;
@@ -107,7 +147,7 @@ export function RadioPlayer() {
       media.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [activeMedia, current]);
+  }, [activeMedia, current, isVideo]);
 
   const bars = useMemo(
     () => Array.from({ length: 44 }, (_, index) => 20 + ((index * 31 + (current?.title.length ?? 7) * 11) % 72)),
@@ -137,31 +177,38 @@ export function RadioPlayer() {
 
   const next = useCallback(() => {
     const media = activeMedia();
-    if (media) remember(media, true);
+    if (media) {
+      remember(media, true);
+      if (isVideo) media.pause();
+    }
     const [first, ...rest] = queue;
     if (first) {
       setQueue(rest);
       setCurrent({ ...first, startAt: 0 });
+      if (!first.mimeType?.startsWith('video/')) startAudio({ ...first, startAt: 0 });
       setProgress(0);
       return;
     }
     if (automaticNext) {
       setCurrent({ ...automaticNext, startAt: 0 });
+      if (!automaticNext.mimeType?.startsWith('video/')) startAudio({ ...automaticNext, startAt: 0 });
       setProgress(0);
       return;
     }
     setPlaying(false);
-  }, [activeMedia, automaticNext, queue, remember]);
+  }, [activeMedia, automaticNext, isVideo, queue, remember, startAudio]);
 
   useEffect(() => {
     if (!current || !('mediaSession' in navigator)) return;
 
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: current.title,
-      artist: current.creator,
-      album: 'راديو',
-      artwork: current.coverUrl ? [{ src: current.coverUrl }] : [],
-    });
+    if (typeof MediaMetadata !== 'undefined') {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: current.title,
+        artist: current.creator,
+        album: 'راديو',
+        artwork: current.coverUrl ? [{ src: current.coverUrl }] : [],
+      });
+    }
 
     const safeHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler | null) => {
       try { navigator.mediaSession.setActionHandler(action, handler); } catch { /* unsupported action */ }
@@ -219,7 +266,7 @@ export function RadioPlayer() {
   function togglePlay() {
     const media = activeMedia();
     if (!media) return;
-    if (media.paused) media.play().then(() => setPlaying(true)).catch(() => undefined);
+    if (media.paused) void media.play().then(() => { setPlaying(true); setPlayError(false); }).catch(() => setPlayError(true));
     else {
       remember(media, true);
       media.pause();
@@ -252,6 +299,7 @@ export function RadioPlayer() {
   }
 
   function closePlayer() {
+    playRequest.current++;
     const media = activeMedia();
     if (media) {
       remember(media, true);
@@ -261,13 +309,23 @@ export function RadioPlayer() {
     setQueue([]);
   }
 
-  if (!current) return null;
-
   const hasNext = Boolean(queue.length || automaticNext);
   const primaryLabel = playing ? 'إيقاف مؤقت' : 'تشغيل';
 
   return (
-    <aside className="radio-player-shell" aria-label="مشغل الراديو">
+    <aside className="radio-player-shell" aria-label="مشغل الراديو" style={!current ? { display: 'none' } : undefined}>
+    <audio
+      ref={audioRef}
+      controls={playError}
+      aria-label="مشغل الصوت"
+      style={playError ? { display: 'block', width: '100%' } : { position: 'absolute', width: 0, height: 0, opacity: 0 }}
+      onPlay={() => { setPlaying(true); setPlayError(false); }}
+      onPause={(e) => { remember(e.currentTarget, true); setPlaying(false); }}
+      onTimeUpdate={(e) => onTimeUpdate(e.currentTarget)}
+      onLoadedMetadata={(e) => setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
+      onEnded={next}
+    />
+    {current ? (
       <div
         className="radio-player-inner container"
         style={!playing ? { minHeight: '64px', gridTemplateRows: 'auto' } : undefined}
@@ -289,17 +347,7 @@ export function RadioPlayer() {
             onLoadedMetadata={(e) => setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
             onEnded={next}
           />
-        ) : (
-          <audio
-            ref={audioRef}
-            src={current.src}
-            onPlay={() => setPlaying(true)}
-            onPause={(e) => { remember(e.currentTarget, true); setPlaying(false); }}
-            onTimeUpdate={(e) => onTimeUpdate(e.currentTarget)}
-            onLoadedMetadata={(e) => setDuration(Number.isFinite(e.currentTarget.duration) ? e.currentTarget.duration : 0)}
-            onEnded={next}
-          />
-        )}
+        ) : null}
         <button
           className="player-icon-button player-primary-control"
           type="button"
@@ -328,7 +376,9 @@ export function RadioPlayer() {
         >
           <CloseIcon />
         </button>
+        {playError && !isVideo ? <span style={{ gridColumn: '1 / -1' }}>إذا لم يبدأ الصوت، اضغط تشغيل في المشغل أعلاه.</span> : null}
       </div>
+    ) : null}
     </aside>
   );
 }
