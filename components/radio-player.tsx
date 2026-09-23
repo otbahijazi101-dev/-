@@ -20,6 +20,7 @@ declare global {
     'radio-queue': CustomEvent<RadioItem>;
     'radio-register': CustomEvent<RadioItem>;
     'radio-unregister': CustomEvent<{ id: string }>;
+    'radio-library-request': Event;
   }
 }
 
@@ -132,6 +133,8 @@ export function RadioPlayer({ siteName }: { siteName: string }) {
     window.addEventListener('radio-queue', onQueue);
     window.addEventListener('radio-register', onRegister);
     window.addEventListener('radio-unregister', onUnregister);
+    // Cards can mount before the player subscribes; request their current items.
+    window.dispatchEvent(new Event('radio-library-request'));
     return () => {
       window.removeEventListener('radio-play', onPlay);
       window.removeEventListener('radio-queue', onQueue);
