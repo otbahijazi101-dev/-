@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'radio-shell-v3';
+const SHELL_CACHE = 'radio-shell-v4';
 const STATIC_CACHE = 'radio-static-v3';
 const OFFLINE_CACHE = 'radio-offline-media-v1';
 const OFFLINE_PAGE = '/offline.html';
@@ -6,7 +6,7 @@ const OFFLINE_PAGE = '/offline.html';
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(SHELL_CACHE);
-    await cache.addAll([OFFLINE_PAGE, '/manifest.webmanifest', '/icon-192.png', '/icon-512.png']);
+    await cache.addAll([OFFLINE_PAGE, '/manifest.webmanifest', '/api/branding/icon/192', '/api/branding/icon/512']);
     self.skipWaiting();
   })());
 });
