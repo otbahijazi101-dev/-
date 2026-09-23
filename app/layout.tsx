@@ -18,7 +18,7 @@ import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { TrackTapController } from '@/components/track-tap-controller';
 import { PwaRegister } from '@/components/pwa-register';
-import { getSiteLogoUrl, getSiteName } from '@/lib/site-settings';
+import { getSiteName } from '@/lib/site-settings';
 
 export const viewport: Viewport = {
   themeColor: '#ff5500',
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [siteName, logoUrl] = await Promise.all([getSiteName(), getSiteLogoUrl()]);
+  const siteName = await getSiteName();
 
   return {
     title: {
@@ -36,11 +36,8 @@ export async function generateMetadata(): Promise<Metadata> {
     description: 'مساحة مفتوحة للاستماع والمشاهدة ومشاركة المحتوى بعد المراجعة.',
     manifest: '/manifest.webmanifest',
     icons: {
-      icon: logoUrl ? [{ url: logoUrl }] : [
-        { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-        { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-      ],
-      apple: [{ url: logoUrl || '/icon-192.png' }],
+      icon: [{ url: '/api/branding/icon/192', sizes: '192x192', type: 'image/png' }],
+      apple: [{ url: '/api/branding/icon/180', sizes: '180x180', type: 'image/png' }],
     },
     appleWebApp: {
       capable: true,
