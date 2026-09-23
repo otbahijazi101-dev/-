@@ -12,11 +12,13 @@ import './enhancements.css';
 import './track-tap.css';
 import './soundcloud.css';
 import './mobile-polish.css';
+import './brand-playlists.css';
+import './listening-refresh.css';
 import { SiteHeader } from '@/components/site-header';
 import { RadioPlayer } from '@/components/radio-player';
 import { TrackTapController } from '@/components/track-tap-controller';
 import { PwaRegister } from '@/components/pwa-register';
-import { getSiteName } from '@/lib/site-settings';
+import { getSiteLogoUrl, getSiteName } from '@/lib/site-settings';
 
 export const viewport: Viewport = {
   themeColor: '#ff5500',
@@ -24,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteName = await getSiteName();
+  const [siteName, logoUrl] = await Promise.all([getSiteName(), getSiteLogoUrl()]);
 
   return {
     title: {
@@ -34,11 +36,11 @@ export async function generateMetadata(): Promise<Metadata> {
     description: 'مساحة مفتوحة للاستماع والمشاهدة ومشاركة المحتوى بعد المراجعة.',
     manifest: '/manifest.webmanifest',
     icons: {
-      icon: [
+      icon: logoUrl ? [{ url: logoUrl }] : [
         { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
         { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
       ],
-      apple: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
+      apple: [{ url: logoUrl || '/icon-192.png' }],
     },
     appleWebApp: {
       capable: true,
@@ -64,7 +66,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <span>مساحة هادئة للصوت والصورة.</span>
           </div>
         </footer>
-        <RadioPlayer />
+        <RadioPlayer siteName={siteName} />
       </body>
     </html>
   );

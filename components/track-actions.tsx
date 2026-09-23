@@ -5,6 +5,29 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 import type { RadioItem } from '@/components/radio-player';
 
 type Playlist = { id: string; title: string };
+type AccountActions = { likes: Set<string>; favorites: Set<string>; following: Set<string>; playlists: Playlist[] };
+const accountActionsCache = new Map<string, { until: number; value: Promise<AccountActions> }>();
+
+function accountActions(userId: string, supabase: ReturnType<typeof createBrowserSupabaseClient>) {
+  const cached = accountActionsCache.get(userId);
+  if (cached && cached.until > Date.now()) return cached.value;
+  const value = Promise.all([
+    supabase.from('likes').select('track_id').eq('user_id', userId),
+    supabase.from('favorites').select('track_id').eq('user_id', userId),
+    supabase.from('follows').select('followed_id').eq('follower_id', userId),
+    supabase.from('playlists').select('id,title').eq('owner_id', userId).order('created_at', { ascending: false }),
+  ]).then(([likes, favorites, following, playlists]) => ({
+    likes: new Set((likes.data ?? []).map((row) => row.track_id)),
+    favorites: new Set((favorites.data ?? []).map((row) => row.track_id)),
+    following: new Set((following.data ?? []).map((row) => row.followed_id)),
+    playlists: (playlists.data ?? []) as Playlist[],
+  })).catch((error) => {
+    accountActionsCache.delete(userId);
+    throw error;
+  });
+  accountActionsCache.set(userId, { until: Date.now() + 15000, value });
+  return value;
+}
 
 type OfflineEntry = {
   id: string;
@@ -87,21 +110,17 @@ export function TrackActions({
 
   useEffect(() => {
     if (!userId) return;
-    void Promise.all([
-      supabase.from('likes').select('track_id').eq('user_id', userId).eq('track_id', item.id).maybeSingle(),
-      supabase.from('favorites').select('track_id').eq('user_id', userId).eq('track_id', item.id).maybeSingle(),
-      ownerId && ownerId !== userId
-        ? supabase.from('follows').select('followed_id').eq('follower_id', userId).eq('followed_id', ownerId).maybeSingle()
-        : Promise.resolve({ data: null }),
-      supabase.from('playlists').select('id,title').eq('owner_id', userId).order('created_at', { ascending: false }),
-    ]).then(([likeResult, favoriteResult, followResult, playlistResult]) => {
-      setLiked(Boolean(likeResult.data));
-      setFavorite(Boolean(favoriteResult.data));
-      setFollowing(Boolean(followResult.data));
-      const rows = (playlistResult.data ?? []) as Playlist[];
+    let cancelled = false;
+    void accountActions(userId, supabase).then((actions) => {
+      if (cancelled) return;
+      setLiked(actions.likes.has(item.id));
+      setFavorite(actions.favorites.has(item.id));
+      setFollowing(Boolean(ownerId && actions.following.has(ownerId)));
+      const rows = actions.playlists;
       setPlaylists(rows);
       if (rows[0]) setPlaylistId(rows[0].id);
-    });
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
   }, [item.id, ownerId, supabase, userId]);
 
   function requireLogin() {
@@ -122,33 +141,33 @@ export function TrackActions({
   async function toggleLike() {
     if (!requireLogin() || !userId) return;
     if (liked) {
-      await supabase.from('likes').delete().eq('user_id', userId).eq('track_id', item.id);
-      setLiked(false);
+      const { error } = await supabase.from('likes').delete().eq('user_id', userId).eq('track_id', item.id);
+      if (!error) { accountActionsCache.delete(userId); setLiked(false); }
     } else {
       const { error } = await supabase.from('likes').insert({ user_id: userId, track_id: item.id });
-      if (!error) setLiked(true);
+      if (!error) { accountActionsCache.delete(userId); setLiked(true); }
     }
   }
 
   async function toggleFavorite() {
     if (!requireLogin() || !userId) return;
     if (favorite) {
-      await supabase.from('favorites').delete().eq('user_id', userId).eq('track_id', item.id);
-      setFavorite(false);
+      const { error } = await supabase.from('favorites').delete().eq('user_id', userId).eq('track_id', item.id);
+      if (!error) { accountActionsCache.delete(userId); setFavorite(false); }
     } else {
       const { error } = await supabase.from('favorites').insert({ user_id: userId, track_id: item.id });
-      if (!error) setFavorite(true);
+      if (!error) { accountActionsCache.delete(userId); setFavorite(true); }
     }
   }
 
   async function toggleFollow() {
     if (!requireLogin() || !userId || !ownerId || ownerId === userId) return;
     if (following) {
-      await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', ownerId);
-      setFollowing(false);
+      const { error } = await supabase.from('follows').delete().eq('follower_id', userId).eq('followed_id', ownerId);
+      if (!error) { accountActionsCache.delete(userId); setFollowing(false); }
     } else {
       const { error } = await supabase.from('follows').insert({ follower_id: userId, followed_id: ownerId });
-      if (!error) setFollowing(true);
+      if (!error) { accountActionsCache.delete(userId); setFollowing(true); }
     }
   }
 

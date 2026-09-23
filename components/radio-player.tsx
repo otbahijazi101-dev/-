@@ -47,7 +47,7 @@ function CloseIcon() {
   );
 }
 
-export function RadioPlayer() {
+export function RadioPlayer({ siteName }: { siteName: string }) {
   const [current, setCurrent] = useState<RadioItem | null>(null);
   const [queue, setQueue] = useState<RadioItem[]>([]);
   const [library, setLibrary] = useState<RadioItem[]>([]);
@@ -59,6 +59,7 @@ export function RadioPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const lastHistoryWrite = useRef(0);
   const playRequest = useRef(0);
+  const progressStep = useRef(-1);
 
   const isVideo = Boolean(current?.mimeType?.startsWith('video/'));
   const activeMedia = useCallback(() => (isVideo ? videoRef.current : audioRef.current), [isVideo]);
@@ -106,7 +107,10 @@ export function RadioPlayer() {
         setPlayError(false);
       }
       setCurrent(item);
+      setQueue([]);
       setProgress(0);
+      progressStep.current = -1;
+      setDuration(0);
     };
     const onQueue = (event: WindowEventMap['radio-queue']) => {
       setQueue((items) => items.some((item) => item.id === event.detail.id) ? items : [...items, event.detail]);
@@ -179,7 +183,7 @@ export function RadioPlayer() {
     const media = activeMedia();
     if (media) {
       remember(media, true);
-      if (isVideo) media.pause();
+      media.pause();
     }
     const [first, ...rest] = queue;
     if (first) {
@@ -187,16 +191,20 @@ export function RadioPlayer() {
       setCurrent({ ...first, startAt: 0 });
       if (!first.mimeType?.startsWith('video/')) startAudio({ ...first, startAt: 0 });
       setProgress(0);
+      progressStep.current = -1;
+      setDuration(0);
       return;
     }
     if (automaticNext) {
       setCurrent({ ...automaticNext, startAt: 0 });
       if (!automaticNext.mimeType?.startsWith('video/')) startAudio({ ...automaticNext, startAt: 0 });
       setProgress(0);
+      progressStep.current = -1;
+      setDuration(0);
       return;
     }
     setPlaying(false);
-  }, [activeMedia, automaticNext, isVideo, queue, remember, startAudio]);
+  }, [activeMedia, automaticNext, queue, remember, startAudio]);
 
   useEffect(() => {
     if (!current || !('mediaSession' in navigator)) return;
@@ -205,7 +213,7 @@ export function RadioPlayer() {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: current.title,
         artist: current.creator,
-        album: 'راديو',
+        album: siteName,
         artwork: current.coverUrl ? [{ src: current.coverUrl }] : [],
       });
     }
@@ -242,7 +250,7 @@ export function RadioPlayer() {
       safeHandler('seekforward', null);
       safeHandler('seekto', null);
     };
-  }, [activeMedia, current, next]);
+  }, [activeMedia, current, next, siteName]);
 
   useEffect(() => {
     if (!('mediaSession' in navigator)) return;
@@ -285,7 +293,12 @@ export function RadioPlayer() {
 
   function onTimeUpdate(media: HTMLMediaElement) {
     const mediaDuration = Number.isFinite(media.duration) ? media.duration : 0;
-    setProgress(mediaDuration ? media.currentTime / mediaDuration : 0);
+    const ratio = mediaDuration ? media.currentTime / mediaDuration : 0;
+    const step = Math.floor(ratio * 44);
+    if (step !== progressStep.current) {
+      progressStep.current = step;
+      setProgress(ratio);
+    }
     remember(media);
     if ('mediaSession' in navigator && mediaDuration > 0 && media.currentTime <= mediaDuration) {
       try {
@@ -313,7 +326,7 @@ export function RadioPlayer() {
   const primaryLabel = playing ? 'إيقاف مؤقت' : 'تشغيل';
 
   return (
-    <aside className="radio-player-shell" aria-label="مشغل الراديو" style={!current ? { display: 'none' } : undefined}>
+    <aside className="radio-player-shell" aria-label={`مشغل ${siteName}`} style={!current ? { display: 'none' } : undefined}>
     <audio
       ref={audioRef}
       controls={playError}
@@ -330,6 +343,9 @@ export function RadioPlayer() {
         className="radio-player-inner container"
         style={!playing ? { minHeight: '64px', gridTemplateRows: 'auto' } : undefined}
       >
+        <div className="radio-player-cover" aria-hidden="true" style={current.coverUrl ? { backgroundImage: `url(${current.coverUrl})` } : undefined}>
+          {!current.coverUrl ? '♫' : null}
+        </div>
         <div className="radio-player-title">
           <strong>{current.title}</strong>
           <span>{current.creator}</span>
@@ -341,6 +357,7 @@ export function RadioPlayer() {
             src={current.src}
             poster={current.coverUrl || undefined}
             playsInline
+            controls
             onPlay={() => setPlaying(true)}
             onPause={(e) => { remember(e.currentTarget, true); setPlaying(false); }}
             onTimeUpdate={(e) => onTimeUpdate(e.currentTarget)}
@@ -357,14 +374,14 @@ export function RadioPlayer() {
         >
           <PlayPauseIcon playing={playing} />
         </button>
-        {playing ? (
+        {duration > 0 && !isVideo ? (
           <button className="player-wave" type="button" onClick={seek} aria-label="الانتقال داخل الملف">
             {bars.map((height, index) => (
               <span key={index} className={index / bars.length <= progress ? 'played' : ''} style={{ height: `${height}%` }} />
             ))}
           </button>
         ) : null}
-        <button className="player-text-button" type="button" onClick={next} disabled={!hasNext}>
+        <button className="player-text-button" type="button" onClick={next} disabled={!hasNext} aria-label="المقطع التالي">
           التالي{queue.length ? ` (${queue.length})` : ''}
         </button>
         <button

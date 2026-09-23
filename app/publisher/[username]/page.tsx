@@ -35,6 +35,7 @@ type ReadyTrack = TrackRow & {
 type PlaylistTrack = {
   id: string;
   title: string;
+  status: string;
   mime_type: string | null;
   storage_path: string;
   cover_path: string | null;
@@ -83,7 +84,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ user
       .order('published_at', { ascending: false }),
     supabase
       .from('playlists')
-      .select('id, title, created_at, playlist_items(sort_order, track:tracks(id, title, mime_type, storage_path, cover_path, owner:profiles!tracks_owner_id_fkey(username, display_name)))')
+      .select('id, title, created_at, playlist_items(sort_order, track:tracks(id, title, status, mime_type, storage_path, cover_path, owner:profiles!tracks_owner_id_fkey(username, display_name)))')
       .eq('owner_id', profile.id)
       .order('created_at', { ascending: false }),
   ]);
@@ -109,7 +110,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ user
   const playlistRows = (playlistData ?? []) as unknown as PlaylistRow[];
   const playlists: ReadyPlaylist[] = await Promise.all(playlistRows.map(async (playlist) => {
     const items = [...(playlist.playlist_items ?? [])]
-      .filter((item): item is { sort_order: number; track: PlaylistTrack } => Boolean(item.track))
+      .filter((item): item is { sort_order: number; track: PlaylistTrack } => item.track?.status === 'published')
       .sort((a, b) => a.sort_order - b.sort_order);
 
     const playItems = (await Promise.all(items.map(async ({ track }) => {
@@ -127,7 +128,7 @@ export default async function PublisherPage({ params }: { params: Promise<{ user
         src: media.signedUrl,
         mimeType: track.mime_type,
         coverUrl: cover.data?.signedUrl ?? null,
-        href: `/#track-${track.id}`,
+        href: `/track/${track.id}`,
       } satisfies RadioItem;
     }))).filter(Boolean) as RadioItem[];
 
@@ -192,14 +193,14 @@ export default async function PublisherPage({ params }: { params: Promise<{ user
               {playlists.map((playlist) => (
                 <article className="playlist-card" key={playlist.id}>
                   <div className="playlist-card-head">
-                    <div><h3>{playlist.title}</h3><span>{playlist.items.length} مقطع</span></div>
+                    <div><h3><Link href={`/community-playlists/${playlist.id}`}>{playlist.title}</Link></h3><span>{playlist.items.length} مقطع</span></div>
                     <PlaylistPlayButton items={playlist.playItems} />
                   </div>
                   {playlist.items.length ? (
                     <ol>
                       {playlist.items.map(({ track }) => (
                         <li key={track.id}>
-                          <Link href={`/#track-${track.id}`}>{track.title}</Link>
+                          <Link href={`/track/${track.id}`}>{track.title}</Link>
                           <small>{track.mime_type?.startsWith('video/') ? 'فيديو' : 'صوت'} · {track.owner?.display_name || track.owner?.username || 'راديو'}</small>
                         </li>
                       ))}

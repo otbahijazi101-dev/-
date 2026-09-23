@@ -56,6 +56,7 @@ export function TrackTapController() {
       const item = (event as CustomEvent<RadioItem>).detail;
       if (!item?.id) return;
       activeTrackId = item.id;
+      queue = [];
       playing = true;
       scheduleSync();
     };

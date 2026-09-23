@@ -58,7 +58,7 @@ export function AudioCard({
     : null;
   const durationLabel = formatDuration(durationSeconds);
   const isVideo = Boolean(mimeType?.startsWith('video/'));
-  const href = `/#track-${id}`;
+  const href = `/track/${id}`;
   const hasDistinctDisplayName = Boolean(
     displayName && username && normalizeName(displayName) !== normalizeName(username),
   );

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PlaylistCreator } from '@/components/playlist-creator';
 import { PlaylistPlayButton } from '@/components/playlist-play-button';
+import { SharePlaylistButton } from '@/components/share-playlist-button';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import type { RadioItem } from '@/components/radio-player';
 
@@ -55,7 +56,7 @@ export default async function PlaylistsPage() {
         src: media.signedUrl,
         mimeType: item.track.mime_type,
         coverUrl: cover.data?.signedUrl ?? null,
-        href: `/#track-${item.track.id}`,
+        href: `/track/${item.track.id}`,
       } satisfies RadioItem;
     }))).filter(Boolean) as RadioItem[];
 
@@ -66,7 +67,7 @@ export default async function PlaylistsPage() {
     <section className="section">
       <div className="container">
         <div className="section-heading">
-          <div><span className="section-kicker">مكتبتي</span><h2>قوائم التشغيل</h2></div>
+          <div><span className="section-kicker">مكتبتي</span><h2>قوائم التشغيل</h2><Link href="/community-playlists">تصفح قوائم الآخرين</Link></div>
           <PlaylistCreator userId={user.id} />
         </div>
         {playlists.length ? (
@@ -74,19 +75,20 @@ export default async function PlaylistsPage() {
             {playlists.map((playlist) => (
               <article className="playlist-card" key={playlist.id}>
                 <div className="playlist-card-head">
-                  <div><h3>{playlist.title}</h3><span>{playlist.playlist_items.length} مقطع</span></div>
+                  <div><h3><Link href={`/community-playlists/${playlist.id}`}>{playlist.title}</Link></h3><span>{playlist.playlist_items.length} مقطع · تظهر الملفات المنشورة للجميع</span></div>
                   <PlaylistPlayButton items={playlist.playItems} />
                 </div>
                 {playlist.playlist_items.length ? (
                   <ol>
                     {playlist.playlist_items.map((item) => item.track ? (
                       <li key={item.track.id}>
-                        <Link href={`/#track-${item.track.id}`}>{item.track.title}</Link>
+                        <Link href={`/track/${item.track.id}`}>{item.track.title}</Link>
                         <small>{item.track.mime_type?.startsWith('video/') ? 'فيديو' : 'صوت'} · {item.track.owner?.display_name || item.track.owner?.username || 'راديو'}</small>
                       </li>
                     ) : null)}
                   </ol>
                 ) : <p className="creator-name">هذه القائمة فارغة. أضف إليها من أي مقطع.</p>}
+                <SharePlaylistButton id={playlist.id} title={playlist.title} />
               </article>
             ))}
           </div>

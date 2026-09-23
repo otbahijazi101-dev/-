@@ -47,6 +47,7 @@ export function MobileNav({ loggedIn, isAdmin }: { loggedIn: boolean; isAdmin: b
     { href: '/', label: 'المكتبة', icon: 'home' },
     { href: '/recent', label: 'مؤخرًا', icon: 'recent' },
     { href: '/search', label: 'بحث', icon: 'search' },
+    { href: '/community-playlists', label: 'قوائم المجتمع', icon: 'list' },
     { href: '/offline', label: 'تنزيلاتي', icon: 'download' },
     ...(loggedIn ? [
       { href: '/favorites', label: 'المحفوظات', icon: 'heart' as const },

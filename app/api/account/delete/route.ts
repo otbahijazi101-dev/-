@@ -14,6 +14,16 @@ function chunks<T>(items: T[], size = 100) {
   return result;
 }
 
+async function ownedFiles(admin: ReturnType<typeof createAdminSupabaseClient>, bucket: string, userId: string) {
+  const paths: string[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await admin.storage.from(bucket).list(userId, { limit: 1000, offset });
+    if (error) throw error;
+    paths.push(...(data ?? []).filter((file) => file.id).map((file) => `${userId}/${file.name}`));
+    if (!data || data.length < 1000) return paths;
+  }
+}
+
 export async function POST(request: Request) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,22 +55,32 @@ export async function POST(request: Request) {
     if ((count ?? 0) <= 1) return accountRedirect(request, 'last_admin');
   }
 
-  const { data: tracks, error: tracksError } = await admin
-    .from('tracks')
-    .select('storage_path, cover_path')
-    .eq('owner_id', user.id);
-  if (tracksError) return accountRedirect(request, 'update_failed');
+  try {
+    // Supabase will not delete an auth user who still owns Storage objects.
+    // Collect the whole user folder, including uploads that never became tracks.
+    const [audioPaths, coverPaths] = await Promise.all([
+      ownedFiles(admin, 'audio', user.id),
+      ownedFiles(admin, 'covers', user.id),
+    ]);
 
-  const audioPaths = (tracks ?? []).map((track) => track.storage_path).filter(Boolean) as string[];
-  const coverPaths = (tracks ?? []).map((track) => track.cover_path).filter(Boolean) as string[];
+    // Remove public records first so nobody is sent to a file being deleted.
+    const { error: tracksError } = await admin.from('tracks').delete().eq('owner_id', user.id);
+    if (tracksError) return accountRedirect(request, 'update_failed');
 
-  /* Delete identity/data first. FK cascades remove profile-owned rows. Storage cleanup then
-     becomes best-effort, so a storage failure can leave only unreachable orphan blobs. */
-  const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
-  if (deleteError) return accountRedirect(request, 'update_failed');
+    for (const batch of chunks(audioPaths)) {
+      const { error } = await admin.storage.from('audio').remove(batch);
+      if (error) return accountRedirect(request, 'delete_partial');
+    }
+    for (const batch of chunks(coverPaths)) {
+      const { error } = await admin.storage.from('covers').remove(batch);
+      if (error) return accountRedirect(request, 'delete_partial');
+    }
 
-  for (const batch of chunks(audioPaths)) await admin.storage.from('audio').remove(batch);
-  for (const batch of chunks(coverPaths)) await admin.storage.from('covers').remove(batch);
+    const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
+    if (deleteError) return accountRedirect(request, 'delete_partial');
+  } catch {
+    return accountRedirect(request, 'update_failed');
+  }
 
   return NextResponse.redirect(new URL('/', request.url), { status: 303 });
 }
